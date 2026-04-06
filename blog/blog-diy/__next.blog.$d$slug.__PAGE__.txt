@@ -1,7 +1,7 @@
 1:"$Sreact.fragment"
 2:I[20920,["/_next/static/chunks/206edc8bfa9357c9.js"],""]
-4:I[3714,["/_next/static/chunks/77b2f83ebb82ab03.js","/_next/static/chunks/c221ad8ac624fc67.js"],"OutletBoundary"]
-5:"$Sreact.suspense"
+6:I[3714,["/_next/static/chunks/77b2f83ebb82ab03.js","/_next/static/chunks/c221ad8ac624fc67.js"],"OutletBoundary"]
+7:"$Sreact.suspense"
 3:Tdb4,<h2>为什么要搭博客</h2>
 <p>为什么要有自己的博客网站，很明显，他有我也要有。开个玩笑，不过确实是因为看到技术大牛都会有自己的博客网站，这也是自己技术实力的一种体现。向他们看齐，我当然也想开设自己的博客网站。</p>
 <p>工作中一定会产生很多自己的思考和沉淀。自己平常会写很多笔记，博客网站就是经过自己笔记的汇总和提总。</p>
@@ -53,5 +53,7 @@ description: "一句话简介"
 <h2>分析</h2>
 <p>依赖包很好用</p>
 <p>但是列表渲染得不够好</p>
-0:{"buildId":"r27Z9tsSQRYin08AptT2I","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"我是怎么搭建我的博客网站的"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"技术栈选型和依赖包"}]]}],["$","div",null,{"className":"prose prose-zinc dark:prose-invert max-w-none","dangerouslySetInnerHTML":{"__html":"$3"}}]]}]]}]}],[["$","script","script-0",{"src":"/_next/static/chunks/206edc8bfa9357c9.js","async":true}]],["$","$L4",null,{"children":["$","$5",null,{"name":"Next.MetadataOutlet","children":"$@6"}]}]]}],"loading":null,"isPartial":false}
-6:null
+0:{"buildId":"As6Kf-O5HtRsuSpSsSzPj","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"我是怎么搭建我的博客网站的"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"技术栈选型和依赖包"}],["$","ul",null,{"className":"mt-4 flex flex-wrap gap-2","children":[["$","li","blog",{"children":["$","$L2",null,{"href":"/tags/blog","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"blog"}]}],["$","li","diy",{"children":["$","$L2",null,{"href":"/tags/diy","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"diy"}]}]]}]]}],["$","div",null,{"className":"prose prose-zinc dark:prose-invert max-w-none","dangerouslySetInnerHTML":{"__html":"$3"}}]]}]]}]}],["$L4"],"$L5"]}],"loading":null,"isPartial":false}
+4:["$","script","script-0",{"src":"/_next/static/chunks/206edc8bfa9357c9.js","async":true}]
+5:["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]
+8:null
