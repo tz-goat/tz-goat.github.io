@@ -1,0 +1,80 @@
+<!DOCTYPE html><!--MYf3I6sn3TMJnqS7lmT03--><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" href="/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="preload" href="/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="stylesheet" href="/_next/static/chunks/5a300111ff4759a1.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/26d7aaedc2ef3234.js"/><script src="/_next/static/chunks/21a01aaac809d912.js" async=""></script><script src="/_next/static/chunks/6fa1a8b771669141.js" async=""></script><script src="/_next/static/chunks/6bc58e32cb3004a0.js" async=""></script><script src="/_next/static/chunks/turbopack-d6b197f549ca3022.js" async=""></script><script src="/_next/static/chunks/77b2f83ebb82ab03.js" async=""></script><script src="/_next/static/chunks/c221ad8ac624fc67.js" async=""></script><script src="/_next/static/chunks/206edc8bfa9357c9.js" async=""></script><meta name="next-size-adjust" content=""/><title>Windows提效-Quicker使用指南</title><meta name="description" content="这是我的第2篇博客文章。"/><link rel="icon" href="/favicon.ico?favicon.0b3bf435.ico" sizes="256x256" type="image/x-icon"/><script src="/_next/static/chunks/a6dad97d9634a72d.js" noModule=""></script></head><body class="geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased"><div hidden=""><!--$--><!--/$--></div><div class="min-h-screen bg-white dark:bg-black"><main class="mx-auto max-w-2xl px-6 py-20"><a class="mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" href="/blog">← 所有文章</a><article><header class="mb-10"><time class="text-sm text-zinc-400">2026-03-18</time><h1 class="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">Windows提效-Quicker使用指南</h1><p class="mt-3 text-lg text-zinc-500 dark:text-zinc-400">这是我的第2篇博客文章。</p></header><div class="prose prose-zinc dark:prose-invert max-w-none"><h2>什么是Quicker</h2>
+<p>Quicker 是一款 Windows 系统上的启动器软件 ，可通过快捷键启动桌面软件和执行文本指令键入长文本等动作减少重复操作的时间，提升工作效率</p>
+<blockquote>
+<p>🔶下载地址：https://getquicker.net/</p>
+<p><strong>我的推荐码：<code>1231517-8328</code></strong>
+<strong>填写推荐码后，首次购买专业版时，推荐人和被推荐人可同时获赠90天专业版时长</strong></p>
+</blockquote>
+<h2>快捷文本指令</h2>
+<p>支持为常用文本或命令设置缩写，输入缩写即可自动键入全文</p>
+<ul>
+<li>也可以设置<strong>触发字符</strong>，输入完缩写后，再按下空格/Enter/Shift后再触发</li>
+<li>3-5个字符是文本指令的最佳长度，方便记忆</li>
+</ul>
+<h3>git命令</h3>
+<p>比如，常用的git命令如<code>git checkout + 分支</code>可以通过设置<code>gco</code>来快捷输入</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>git checkout </code> | <code>gco</code> |
+| <code>git pull origin release/4.2.x; git push</code> | <code>gsy</code> |
+| <code>git pull origin feature/vue3-components</code> | <code>gs3</code> |
+| <code>git add -A\n git commit -m 'feat: </code> | <code>gcf</code> |
+| <code>git add -A\n git commit -m 'fix: </code> | <code>gcx</code> |
+| <code>git add -A\n git commit -m 'chore:</code> | <code>gcc</code> |
+| <code>git add -A\n git commit -m 'style:</code> | <code>gcs</code> |
+| <code>; git push</code> | <code>gpp </code> |</p>
+<h3>常用AI提示词</h3>
+<ul>
+<li>对于较复杂的命令，如果AI没有完全理解任务就进行改动，此时风险很高，引入大量错误的代码，回溯麻烦，浪费token</li>
+<li>所以避免AI犯傻最有效的方法就是让AI复述一遍它对任务的理解，也方便我们做微调</li>
+</ul>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>暂不改动代码，先复述你对这个任务的理解。</code> | <code>aii</code> |</p>
+<p>还需要对AI的复述执行回复</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>理解正确，执行操作</code> | <code>ayy</code> |
+| <code>不对, 我的意思是</code> | <code>anono</code> |</p>
+<p>日志在排查问题时是非常关键的，AI IDE不仅需要从日志中获取信息协助排查，同时也擅长加日志来协助</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>增加简短console帮助我排查</code> | <code>addc </code> |
+| <code>console.log(</code> | <code>clog </code> |</p>
+<h3>脚本</h3>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>pnpm newBranch --new feature/</code> | <code>ppnn</code> |</p>
+<h2>自定义基础动作</h2>
+<p>可将启动软件、访问网址等操作绑定快捷键，无需打开 Quicker 界面即可快速触发。例如：</p>
+<ul>
+<li>访问Edge, Chrome浏览器</li>
+<li>访问Gitlab上个人MR</li>
+<li>访问Agile Fox</li>
+</ul>
+<p><strong>建议配合快捷键使用</strong></p>
+<h2>其他功能</h2>
+<h3>剪贴板</h3>
+<p>保留复制的文本、图片和文件，支持回溯和快速粘贴，适合需要重复使用分支名等场景</p>
+<ul>
+<li>可用于收藏需要短期重复使用的文本，比如需求分支</li>
+</ul>
+<h3>截图OCR</h3>
+<p>通过截图识别文字，解决无复制权限场景下的文本提取需求</p>
+<h3>搜索Everything</h3>
+<p>搜索本地电脑文件，搜索速度远远快于文件管理器</p>
+<h3>EVER智识</h3>
+<p>在选中文本后，对不同类型的文本自动判断执行不同的操作，可用于：</p>
+<ul>
+<li>打开网址</li>
+<li>在文件管理器中打开文件</li>
+<li>选中文本后一键搜索</li>
+</ul>
+<p><strong>建议配合快捷键使用</strong></p>
+<p>以下用于实例演示</p>
+<blockquote>
+<p>https://www.bilibili.com/video/BV1Tf4y1F7Q9/?p=4&#x26;spm_id_from=333.788.top_right_bar_window_history.content.click&#x26;vd_source=786f9650b60706f85d6b292219d010ff
+C:\Windows\System32\drivers\etc
+Claude Code</p>
+</blockquote>
+</div></article></main></div><!--$--><!--/$--><script src="/_next/static/chunks/26d7aaedc2ef3234.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[72934,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"default\"]\n3:I[60043,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"default\"]\n5:I[3714,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"OutletBoundary\"]\n6:\"$Sreact.suspense\"\n8:I[3714,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"ViewportBoundary\"]\na:I[3714,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"MetadataBoundary\"]\nc:I[13812,[],\"default\"]\n:HL[\"/_next/static/chunks/5a300111ff4759a1.css\",\"style\"]\n:HL[\"/_next/static/media/797e433ab948586e-s.p.dbea232f.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/_next/static/media/caa3a2e1cccd8315-s.p.853070df.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n"])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"b\":\"MYf3I6sn3TMJnqS7lmT03\",\"c\":[\"\",\"blog\",\"quicker\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"blog\",{\"children\":[[\"slug\",\"quicker\",\"d\"],{\"children\":[\"__PAGE__\",{}]}]}]},\"$undefined\",\"$undefined\",true],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/5a300111ff4759a1.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[\"$\",\"body\",null,{\"className\":\"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased\",\"children\":[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[\"$L4\",[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/206edc8bfa9357c9.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L5\",null,{\"children\":[\"$\",\"$6\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@7\"}]}]]}],{},null,false,false]},null,false,false]},null,false,false]},null,false,false],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$L8\",null,{\"children\":\"$L9\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$La\",null,{\"children\":[\"$\",\"$6\",null,{\"name\":\"Next.Metadata\",\"children\":\"$Lb\"}]}]}],[\"$\",\"meta\",null,{\"name\":\"next-size-adjust\",\"content\":\"\"}]]}],false]],\"m\":\"$undefined\",\"G\":[\"$c\",[]],\"S\":true}\n"])</script><script>self.__next_f.push([1,"d:I[20920,[\"/_next/static/chunks/206edc8bfa9357c9.js\"],\"\"]\ne:Tf78,"])</script><script>self.__next_f.push([1,"\u003ch2\u003e什么是Quicker\u003c/h2\u003e\n\u003cp\u003eQuicker 是一款 Windows 系统上的启动器软件 ，可通过快捷键启动桌面软件和执行文本指令键入长文本等动作减少重复操作的时间，提升工作效率\u003c/p\u003e\n\u003cblockquote\u003e\n\u003cp\u003e🔶下载地址：https://getquicker.net/\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e我的推荐码：\u003ccode\u003e1231517-8328\u003c/code\u003e\u003c/strong\u003e\n\u003cstrong\u003e填写推荐码后，首次购买专业版时，推荐人和被推荐人可同时获赠90天专业版时长\u003c/strong\u003e\u003c/p\u003e\n\u003c/blockquote\u003e\n\u003ch2\u003e快捷文本指令\u003c/h2\u003e\n\u003cp\u003e支持为常用文本或命令设置缩写，输入缩写即可自动键入全文\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e也可以设置\u003cstrong\u003e触发字符\u003c/strong\u003e，输入完缩写后，再按下空格/Enter/Shift后再触发\u003c/li\u003e\n\u003cli\u003e3-5个字符是文本指令的最佳长度，方便记忆\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003egit命令\u003c/h3\u003e\n\u003cp\u003e比如，常用的git命令如\u003ccode\u003egit checkout + 分支\u003c/code\u003e可以通过设置\u003ccode\u003egco\u003c/code\u003e来快捷输入\u003c/p\u003e\n\u003cp\u003e| 文本 | 缩写 |\n|------|------|\n| \u003ccode\u003egit checkout \u003c/code\u003e | \u003ccode\u003egco\u003c/code\u003e |\n| \u003ccode\u003egit pull origin release/4.2.x; git push\u003c/code\u003e | \u003ccode\u003egsy\u003c/code\u003e |\n| \u003ccode\u003egit pull origin feature/vue3-components\u003c/code\u003e | \u003ccode\u003egs3\u003c/code\u003e |\n| \u003ccode\u003egit add -A\\n git commit -m 'feat: \u003c/code\u003e | \u003ccode\u003egcf\u003c/code\u003e |\n| \u003ccode\u003egit add -A\\n git commit -m 'fix: \u003c/code\u003e | \u003ccode\u003egcx\u003c/code\u003e |\n| \u003ccode\u003egit add -A\\n git commit -m 'chore:\u003c/code\u003e | \u003ccode\u003egcc\u003c/code\u003e |\n| \u003ccode\u003egit add -A\\n git commit -m 'style:\u003c/code\u003e | \u003ccode\u003egcs\u003c/code\u003e |\n| \u003ccode\u003e; git push\u003c/code\u003e | \u003ccode\u003egpp \u003c/code\u003e |\u003c/p\u003e\n\u003ch3\u003e常用AI提示词\u003c/h3\u003e\n\u003cul\u003e\n\u003cli\u003e对于较复杂的命令，如果AI没有完全理解任务就进行改动，此时风险很高，引入大量错误的代码，回溯麻烦，浪费token\u003c/li\u003e\n\u003cli\u003e所以避免AI犯傻最有效的方法就是让AI复述一遍它对任务的理解，也方便我们做微调\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e| 文本 | 缩写 |\n|------|------|\n| \u003ccode\u003e暂不改动代码，先复述你对这个任务的理解。\u003c/code\u003e | \u003ccode\u003eaii\u003c/code\u003e |\u003c/p\u003e\n\u003cp\u003e还需要对AI的复述执行回复\u003c/p\u003e\n\u003cp\u003e| 文本 | 缩写 |\n|------|------|\n| \u003ccode\u003e理解正确，执行操作\u003c/code\u003e | \u003ccode\u003eayy\u003c/code\u003e |\n| \u003ccode\u003e不对, 我的意思是\u003c/code\u003e | \u003ccode\u003eanono\u003c/code\u003e |\u003c/p\u003e\n\u003cp\u003e日志在排查问题时是非常关键的，AI IDE不仅需要从日志中获取信息协助排查，同时也擅长加日志来协助\u003c/p\u003e\n\u003cp\u003e| 文本 | 缩写 |\n|------|------|\n| \u003ccode\u003e增加简短console帮助我排查\u003c/code\u003e | \u003ccode\u003eaddc \u003c/code\u003e |\n| \u003ccode\u003econsole.log(\u003c/code\u003e | \u003ccode\u003eclog \u003c/code\u003e |\u003c/p\u003e\n\u003ch3\u003e脚本\u003c/h3\u003e\n\u003cp\u003e| 文本 | 缩写 |\n|------|------|\n| \u003ccode\u003epnpm newBranch --new feature/\u003c/code\u003e | \u003ccode\u003eppnn\u003c/code\u003e |\u003c/p\u003e\n\u003ch2\u003e自定义基础动作\u003c/h2\u003e\n\u003cp\u003e可将启动软件、访问网址等操作绑定快捷键，无需打开 Quicker 界面即可快速触发。例如：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e访问Edge, Chrome浏览器\u003c/li\u003e\n\u003cli\u003e访问Gitlab上个人MR\u003c/li\u003e\n\u003cli\u003e访问Agile Fox\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003e建议配合快捷键使用\u003c/strong\u003e\u003c/p\u003e\n\u003ch2\u003e其他功能\u003c/h2\u003e\n\u003ch3\u003e剪贴板\u003c/h3\u003e\n\u003cp\u003e保留复制的文本、图片和文件，支持回溯和快速粘贴，适合需要重复使用分支名等场景\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e可用于收藏需要短期重复使用的文本，比如需求分支\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003e截图OCR\u003c/h3\u003e\n\u003cp\u003e通过截图识别文字，解决无复制权限场景下的文本提取需求\u003c/p\u003e\n\u003ch3\u003e搜索Everything\u003c/h3\u003e\n\u003cp\u003e搜索本地电脑文件，搜索速度远远快于文件管理器\u003c/p\u003e\n\u003ch3\u003eEVER智识\u003c/h3\u003e\n\u003cp\u003e在选中文本后，对不同类型的文本自动判断执行不同的操作，可用于：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e打开网址\u003c/li\u003e\n\u003cli\u003e在文件管理器中打开文件\u003c/li\u003e\n\u003cli\u003e选中文本后一键搜索\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e\u003cstrong\u003e建议配合快捷键使用\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e以下用于实例演示\u003c/p\u003e\n\u003cblockquote\u003e\n\u003cp\u003ehttps://www.bilibili.com/video/BV1Tf4y1F7Q9/?p=4\u0026#x26;spm_id_from=333.788.top_right_bar_window_history.content.click\u0026#x26;vd_source=786f9650b60706f85d6b292219d010ff\nC:\\Windows\\System32\\drivers\\etc\nClaude Code\u003c/p\u003e\n\u003c/blockquote\u003e\n"])</script><script>self.__next_f.push([1,"4:[\"$\",\"div\",null,{\"className\":\"min-h-screen bg-white dark:bg-black\",\"children\":[\"$\",\"main\",null,{\"className\":\"mx-auto max-w-2xl px-6 py-20\",\"children\":[[\"$\",\"$Ld\",null,{\"href\":\"/blog\",\"className\":\"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100\",\"children\":\"← 所有文章\"}],[\"$\",\"article\",null,{\"children\":[[\"$\",\"header\",null,{\"className\":\"mb-10\",\"children\":[[\"$\",\"time\",null,{\"className\":\"text-sm text-zinc-400\",\"children\":\"2026-03-18\"}],[\"$\",\"h1\",null,{\"className\":\"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50\",\"children\":\"Windows提效-Quicker使用指南\"}],[\"$\",\"p\",null,{\"className\":\"mt-3 text-lg text-zinc-500 dark:text-zinc-400\",\"children\":\"这是我的第2篇博客文章。\"}]]}],[\"$\",\"div\",null,{\"className\":\"prose prose-zinc dark:prose-invert max-w-none\",\"dangerouslySetInnerHTML\":{\"__html\":\"$e\"}}]]}]]}]}]\n"])</script><script>self.__next_f.push([1,"9:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\n"])</script><script>self.__next_f.push([1,"f:I[81227,[\"/_next/static/chunks/77b2f83ebb82ab03.js\",\"/_next/static/chunks/c221ad8ac624fc67.js\"],\"IconMark\"]\n7:null\nb:[[\"$\",\"title\",\"0\",{\"children\":\"Windows提效-Quicker使用指南\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"这是我的第2篇博客文章。\"}],[\"$\",\"link\",\"2\",{\"rel\":\"icon\",\"href\":\"/favicon.ico?favicon.0b3bf435.ico\",\"sizes\":\"256x256\",\"type\":\"image/x-icon\"}],[\"$\",\"$Lf\",\"3\",{}]]\n"])</script></body></html>

@@ -1,0 +1,87 @@
+1:"$Sreact.fragment"
+2:I[20920,["/_next/static/chunks/206edc8bfa9357c9.js"],""]
+6:I[3714,["/_next/static/chunks/77b2f83ebb82ab03.js","/_next/static/chunks/c221ad8ac624fc67.js"],"OutletBoundary"]
+7:"$Sreact.suspense"
+3:Tf78,<h2>什么是Quicker</h2>
+<p>Quicker 是一款 Windows 系统上的启动器软件 ，可通过快捷键启动桌面软件和执行文本指令键入长文本等动作减少重复操作的时间，提升工作效率</p>
+<blockquote>
+<p>🔶下载地址：https://getquicker.net/</p>
+<p><strong>我的推荐码：<code>1231517-8328</code></strong>
+<strong>填写推荐码后，首次购买专业版时，推荐人和被推荐人可同时获赠90天专业版时长</strong></p>
+</blockquote>
+<h2>快捷文本指令</h2>
+<p>支持为常用文本或命令设置缩写，输入缩写即可自动键入全文</p>
+<ul>
+<li>也可以设置<strong>触发字符</strong>，输入完缩写后，再按下空格/Enter/Shift后再触发</li>
+<li>3-5个字符是文本指令的最佳长度，方便记忆</li>
+</ul>
+<h3>git命令</h3>
+<p>比如，常用的git命令如<code>git checkout + 分支</code>可以通过设置<code>gco</code>来快捷输入</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>git checkout </code> | <code>gco</code> |
+| <code>git pull origin release/4.2.x; git push</code> | <code>gsy</code> |
+| <code>git pull origin feature/vue3-components</code> | <code>gs3</code> |
+| <code>git add -A\n git commit -m 'feat: </code> | <code>gcf</code> |
+| <code>git add -A\n git commit -m 'fix: </code> | <code>gcx</code> |
+| <code>git add -A\n git commit -m 'chore:</code> | <code>gcc</code> |
+| <code>git add -A\n git commit -m 'style:</code> | <code>gcs</code> |
+| <code>; git push</code> | <code>gpp </code> |</p>
+<h3>常用AI提示词</h3>
+<ul>
+<li>对于较复杂的命令，如果AI没有完全理解任务就进行改动，此时风险很高，引入大量错误的代码，回溯麻烦，浪费token</li>
+<li>所以避免AI犯傻最有效的方法就是让AI复述一遍它对任务的理解，也方便我们做微调</li>
+</ul>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>暂不改动代码，先复述你对这个任务的理解。</code> | <code>aii</code> |</p>
+<p>还需要对AI的复述执行回复</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>理解正确，执行操作</code> | <code>ayy</code> |
+| <code>不对, 我的意思是</code> | <code>anono</code> |</p>
+<p>日志在排查问题时是非常关键的，AI IDE不仅需要从日志中获取信息协助排查，同时也擅长加日志来协助</p>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>增加简短console帮助我排查</code> | <code>addc </code> |
+| <code>console.log(</code> | <code>clog </code> |</p>
+<h3>脚本</h3>
+<p>| 文本 | 缩写 |
+|------|------|
+| <code>pnpm newBranch --new feature/</code> | <code>ppnn</code> |</p>
+<h2>自定义基础动作</h2>
+<p>可将启动软件、访问网址等操作绑定快捷键，无需打开 Quicker 界面即可快速触发。例如：</p>
+<ul>
+<li>访问Edge, Chrome浏览器</li>
+<li>访问Gitlab上个人MR</li>
+<li>访问Agile Fox</li>
+</ul>
+<p><strong>建议配合快捷键使用</strong></p>
+<h2>其他功能</h2>
+<h3>剪贴板</h3>
+<p>保留复制的文本、图片和文件，支持回溯和快速粘贴，适合需要重复使用分支名等场景</p>
+<ul>
+<li>可用于收藏需要短期重复使用的文本，比如需求分支</li>
+</ul>
+<h3>截图OCR</h3>
+<p>通过截图识别文字，解决无复制权限场景下的文本提取需求</p>
+<h3>搜索Everything</h3>
+<p>搜索本地电脑文件，搜索速度远远快于文件管理器</p>
+<h3>EVER智识</h3>
+<p>在选中文本后，对不同类型的文本自动判断执行不同的操作，可用于：</p>
+<ul>
+<li>打开网址</li>
+<li>在文件管理器中打开文件</li>
+<li>选中文本后一键搜索</li>
+</ul>
+<p><strong>建议配合快捷键使用</strong></p>
+<p>以下用于实例演示</p>
+<blockquote>
+<p>https://www.bilibili.com/video/BV1Tf4y1F7Q9/?p=4&#x26;spm_id_from=333.788.top_right_bar_window_history.content.click&#x26;vd_source=786f9650b60706f85d6b292219d010ff
+C:\Windows\System32\drivers\etc
+Claude Code</p>
+</blockquote>
+0:{"buildId":"MYf3I6sn3TMJnqS7lmT03","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-03-18"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"Windows提效-Quicker使用指南"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"这是我的第2篇博客文章。"}]]}],["$","div",null,{"className":"prose prose-zinc dark:prose-invert max-w-none","dangerouslySetInnerHTML":{"__html":"$3"}}]]}]]}]}],["$L4"],"$L5"]}],"loading":null,"isPartial":false}
+4:["$","script","script-0",{"src":"/_next/static/chunks/206edc8bfa9357c9.js","async":true}]
+5:["$","$L6",null,{"children":["$","$7",null,{"name":"Next.MetadataOutlet","children":"$@8"}]}]
+8:null
