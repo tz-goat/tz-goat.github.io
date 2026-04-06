@@ -2,11 +2,11 @@
 2:I[20920,["/_next/static/chunks/206edc8bfa9357c9.js"],""]
 4:I[3714,["/_next/static/chunks/77b2f83ebb82ab03.js","/_next/static/chunks/c221ad8ac624fc67.js"],"OutletBoundary"]
 5:"$Sreact.suspense"
-3:Tdb2,<h2>为什么要搭博客</h2>
+3:Tdb4,<h2>为什么要搭博客</h2>
 <p>为什么要有自己的博客网站，很明显，他有我也要有。开个玩笑，不过确实是因为看到技术大牛都会有自己的博客网站，这也是自己技术实力的一种体现。向他们看齐，我当然也想开设自己的博客网站。</p>
 <p>工作中一定会产生很多自己的思考和沉淀。自己平常会写很多笔记，博客网站就是经过自己笔记的汇总和提总。</p>
 <h2>技术栈选型</h2>
-<p>之前在data.ai(已被Sensor Tower收购)上班时，公司用的前端框架就是Next.js, 而在富途和店小秘的业务组都是主要用Vue。对React的理解使用在回国之后慢慢弱了一些，但是后来在进行面试准备的时候发现一线大厂更偏向vue。所以为了保持对技术栈的熟悉，我决定自己的博客还是要用Next.js来写。</p>
+<p>之前在data.ai(已被Sensor Tower收购)上班时，公司用的前端框架就是Next.js, 而在富途和店小秘的业务组都是主要用Vue。对React的理解使用在回国之后慢慢弱了一些，但是后来在进行面试准备的时候发现一线大厂更偏向React。所以为了保持对技术栈的熟悉，我决定自己的博客还是要用Next.js来写。</p>
 <h2>Agent搭建</h2>
 <p>Cursor是平常使用最多的工具，所以博客当然是通过Cursor来搭建的，</p>
 <p>本来想过v0选一个好看点的主题，后来觉得还是一切从简，按需添置就好。</p>
@@ -53,5 +53,5 @@ description: "一句话简介"
 <h2>分析</h2>
 <p>依赖包很好用</p>
 <p>但是列表渲染得不够好</p>
-0:{"buildId":"MYf3I6sn3TMJnqS7lmT03","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"我是怎么搭建我的博客网站的"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"技术栈选型和依赖包"}]]}],["$","div",null,{"className":"prose prose-zinc dark:prose-invert max-w-none","dangerouslySetInnerHTML":{"__html":"$3"}}]]}]]}]}],[["$","script","script-0",{"src":"/_next/static/chunks/206edc8bfa9357c9.js","async":true}]],["$","$L4",null,{"children":["$","$5",null,{"name":"Next.MetadataOutlet","children":"$@6"}]}]]}],"loading":null,"isPartial":false}
+0:{"buildId":"vvik_30oJl7cFiD6H_Qaz","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"我是怎么搭建我的博客网站的"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"技术栈选型和依赖包"}]]}],["$","div",null,{"className":"prose prose-zinc dark:prose-invert max-w-none","dangerouslySetInnerHTML":{"__html":"$3"}}]]}]]}]}],[["$","script","script-0",{"src":"/_next/static/chunks/206edc8bfa9357c9.js","async":true}]],["$","$L4",null,{"children":["$","$5",null,{"name":"Next.MetadataOutlet","children":"$@6"}]}]]}],"loading":null,"isPartial":false}
 6:null
