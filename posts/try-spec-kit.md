@@ -38,6 +38,7 @@ spec其实就是specify, 翻译过来就是说详细点
 - .specify/memory/constitution.md
 
 - 命令太长了，不太好记，光是constitution这个词我都觉得好难打
+- 这是我的问题，其实在Cursor agent输入框里敲个/就能调用所有命令，手打费时费力Agent还要费时间去查
 
 is the constituion good？
 
@@ -58,6 +59,7 @@ is the constituion good？
 接下来才是spec-kit的核心功能，clarify, 让AI检查spec中哪些功能不够清晰，
 
 - 这个过程总AI会通过提供选项，问你不清楚的功能要按照什么方式去实现，而你只需要选择即可
+- Den在这里花的时间比较多，clarify的5个问题全用了
 
 ```
 澄清问题 1 / 最多 5 个
@@ -69,3 +71,12 @@ is the constituion good？
 ```
 
 clarify完成之后再进入plan步骤
+
+```
+/speckit.plan 在已有网页基础上增加tag特性，已有博客markdown可以增加测试tag，后续我再修改
+```
+
+plan完成后再进入task模式拆任务，这中间又会生成一堆文档
+- tasks.md
+
+完成之后终于可以通过implement来进行实际的代码改动
