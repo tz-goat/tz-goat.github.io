@@ -1,0 +1,35 @@
+---
+description: Project Development Guidelines
+globs: ["**/*"]
+alwaysApply: true
+---
+# my-blog Development Guidelines
+
+Auto-generated from all feature plans. Last updated: 2026-04-06
+
+## Active Technologies
+
+- TypeScript 5.x / Node 20+（与 `@types/node` 一致） + Next.js 16.1.6，React 19，gray-matter，remark，remark-html，Tailwind CSS 4 (001-blog-post-tags)
+
+## Project Structure
+
+```text
+posts/*.md
+app/ (App Router: blog/, tags/)
+lib/posts.ts
+```
+
+## Commands
+
+npm run dev; npm run build; npm run lint
+
+## Code Style
+
+TypeScript 5.x / Node 20+（与 `@types/node` 一致）: Follow standard conventions
+
+## Recent Changes
+
+- 001-blog-post-tags: Added TypeScript 5.x / Node 20+（与 `@types/node` 一致） + Next.js 16.1.6，React 19，gray-matter，remark，remark-html，Tailwind CSS 4
+
+<!-- MANUAL ADDITIONS START -->
+<!-- MANUAL ADDITIONS END -->

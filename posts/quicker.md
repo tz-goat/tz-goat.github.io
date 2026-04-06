@@ -2,6 +2,9 @@
 title: "Windows提效-Quicker使用指南"
 date: "2026-03-18"
 description: "这是我的第2篇博客文章。"
+tags:
+  - "tools"
+  - "windows"
 ---
 
 ## 什么是Quicker

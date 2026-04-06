@@ -2,6 +2,9 @@
 title: "你好，世界"
 date: "2026-03-18"
 description: "这是我的第一篇博客文章，记录下这个起点。"
+tags:
+  - "hello"
+  - "test"
 ---
 
 # 你好，世界

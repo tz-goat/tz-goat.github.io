@@ -50,6 +50,18 @@ export default async function PostPage({ params }: Props) {
             <p className="mt-3 text-lg text-zinc-500 dark:text-zinc-400">
               {post.description}
             </p>
+            <ul className="mt-4 flex flex-wrap gap-2">
+              {post.tags.map((t) => (
+                <li key={t}>
+                  <Link
+                    href={`/tags/${t}`}
+                    className="inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600"
+                  >
+                    {t}
+                  </Link>
+                </li>
+              ))}
+            </ul>
           </header>
 
           <div
