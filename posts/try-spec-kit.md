@@ -1,13 +1,24 @@
 ---
-title: "你好，世界"
+title: "Spec-Kit实战"
 date: "2026-04-06"
-description: "这是我的第一篇博客文章，记录下这个起点。"
+description: "记录我如何通过spec kit优化自己的博客网站，增加tag和选择性展示等功能"
 tags:
   - "spec-kit"
   - "meta"
 ---
 
 开发这个blog网站的时候我是用了当下很火的Spec kit开发
+
+## GOAL
+
+了解spec-kit开发全流程，评估这个流程是否适合长期使用，以及教其他人使用spec-kit
+spec-kit分步骤执行，首先consittuion, 然后用specify命令增加需求，接着再用clarify帮助agent澄清疑惑，agent随后用plan命令创建实行计划，接着用tasks执行
+
+- 我的疑问：
+  - Q:为什么要分这么多步骤，直接在prompt中写不行就行
+  - A: 防止under-specify, 我们写prompt的时候不一定能全部描述清楚需求，所以需要分步骤执行
+  - Q：under-specify的部分可以理解，LLM需要更细节，在乎上下文，但是plan和tasks有必要分开吗
+
 
 ## 参考
 
@@ -31,17 +42,18 @@ spec其实就是specify, 翻译过来就是说详细点
 - integration.json
 ```
 
-先一步是运行`/speckit.constitution`，建立宪章
+### 第一步是运行`/speckit.constitution`
+
+建立宪章
 
 初始化的时候我选择了Cursor Agent作为我的AI assitant, 所以Spec-kit还额外增加了一个integrations文件夹，用于执行cursor命令
 
 - .specify/memory/constitution.md
 
-- 命令太长了，不太好记，光是constitution这个词我都觉得好难打
+- 不要觉得命令太长了，不太好记，输入框中输入下划线/constitution自动补全
 
-is the constituion good？
 
-下一步 specify命令
+### 下一步 specify命令
 
 ```
 /speckit.specify 我想要让博客文章支持tags功能，每个文章应该会有至少一个tag，可以包含多个， 用户可以通过tag路由：`/tags/spec/` 访问包含该tag的所有文章, 方便用户访问特定种类的文章
@@ -69,3 +81,22 @@ is the constituion good？
 ```
 
 clarify完成之后再进入plan步骤
+
+### plan命令
+
+```
+/speckit.plan 我想要让博客文章支持tags功能，每个文章应该会有至少一个tag，可以包含多个， 用户可以通过tag路由：`/tags/spec/` 访问包含该tag的所有文章, 方便用户访问特定种类的文章
+```
+
+可以看到这个步骤的具体产物有这些
+- Reasearch
+  - research.md: 描述这个特性的具体表现，比如frontmatter应该写什么值，以及直链访问隐藏的文章路由时页面怎么表现，同时包括影响面和涉及的文件清单
+- Design 
+  - data-model.md: 描述这个特性相关的数据模型，包括frontmatter中的属性列表和相关定义
+- Contracts 
+ - frontmatter.md: 详细解释下本次引入的hidden属性
+ - routing.md: 列举当前支持的路由路径，包括tag路由，以及hidden属性的页面的路由表现
+
+### tasks
+
+生成可执行的任务拆解清单，PLAN完成后，下一步就到tasks描述具体实现步骤
