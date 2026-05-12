@@ -14,8 +14,8 @@
  **Purpose**: 对齐实现前置条件与影响面，确保后续任务可独立验收
  
 - [ ] T001 确认当前分支为 `002-hide-posts`，并拉起本地环境用于验收（运行 `pnpm dev`，repo root `package.json`）
-- [ ] T002 盘点受影响入口并记录在任务上下文：`app/page.tsx`、`app/blog/page.tsx`、`app/tags/[tag]/page.tsx`、`app/blog/[slug]/page.tsx`、`lib/posts.ts`
-- [ ] T003 [P] 准备一篇用于验收的隐藏文章：在 `posts/<slug>.md` frontmatter 增加 `hidden: true`
+- [x] T002 盘点受影响入口并记录在任务上下文：`app/page.tsx`、`app/blog/page.tsx`、`app/tags/[tag]/page.tsx`、`app/blog/[slug]/page.tsx`、`lib/posts.ts`
+- [x] T003 [P] 准备一篇用于验收的隐藏文章：在 `posts/<slug>.md` frontmatter 增加 `hidden: true`
  
  ---
  
@@ -25,12 +25,12 @@
  
  **⚠️ CRITICAL**: User Story 阶段任务依赖本阶段完成
  
-- [ ] T004 在 `lib/posts.ts` 为 `PostMeta` 增加 `hidden: boolean` 字段（缺省为 `false`）
-- [ ] T005 在 `lib/posts.ts` 的 frontmatter 解析中读取 `hidden`（允许缺省；当为 truthy 时视为隐藏）
-- [ ] T006 在 `lib/posts.ts` 的 `getAllPosts()` 默认过滤隐藏文章（仅返回公开文章）
-- [ ] T007 在 `lib/posts.ts` 的 `getAllTagSlugs()` 基于公开文章生成 tag 集合（避免隐藏文章导致生成多余 tag 页面）
-- [ ] T008 在 `lib/posts.ts` 的 `getPostsByTagSlug()` 确保只返回公开文章（即使未来内部实现变更也不泄露）
-- [ ] T009 在 `lib/posts.ts` 的 `getPostBySlug()` 读取到 `hidden: true` 时抛出错误（由路由层 `notFound()` 处理）
+- [x] T004 在 `lib/posts.ts` 为 `PostMeta` 增加 `hidden: boolean` 字段（缺省为 `false`）
+- [x] T005 在 `lib/posts.ts` 的 frontmatter 解析中读取 `hidden`（允许缺省；当为 truthy 时视为隐藏）
+- [x] T006 在 `lib/posts.ts` 的 `getAllPosts()` 默认过滤隐藏文章（仅返回公开文章）
+- [x] T007 在 `lib/posts.ts` 的 `getAllTagSlugs()` 基于公开文章生成 tag 集合（避免隐藏文章导致生成多余 tag 页面）
+- [x] T008 在 `lib/posts.ts` 的 `getPostsByTagSlug()` 确保只返回公开文章（即使未来内部实现变更也不泄露）
+- [x] T009 在 `lib/posts.ts` 的 `getPostBySlug()` 读取到 `hidden: true` 时抛出错误（由路由层 `notFound()` 处理）
  
  **Checkpoint**: `lib/posts.ts` 能区分公开/隐藏文章，且隐藏文章不会出现在任何聚合结果中
  
@@ -55,7 +55,7 @@
  
  **Independent Test**: 将同一篇文章的 `hidden` 在 `true/false/缺省` 间切换并重新启动/重新构建，验证其在列表与详情页的可见性随之变化
  
-- [ ] T012 [US2] 补充 `specs/002-hide-posts/quickstart.md` 验证步骤：如何设置 `hidden: true` 与恢复（确保与当前实现一致）
+- [x] T012 [US2] 补充 `specs/002-hide-posts/quickstart.md` 验证步骤：如何设置 `hidden: true` 与恢复（确保与当前实现一致）
 - [ ] T013 [US2] 验证未设置 `hidden` 的文章默认公开（至少抽查 1 篇未设置的旧文章在 `/blog` 可见）
 - [ ] T014 [US2] 验证设置 `hidden: false` 与删除 `hidden` 字段行为一致（两者都应公开）
  
@@ -67,8 +67,8 @@
  
  **Independent Test**: 访问一篇隐藏文章的 `/blog/<slug>`，页面触发 notFound，不渲染正文；公开文章不受影响
  
-- [ ] T015 [US3] 更新 `app/blog/[slug]/page.tsx` 的 `generateStaticParams()`：只为公开文章生成 params（依赖 `getAllPosts()` 过滤）
-- [ ] T016 [US3] 确认 `app/blog/[slug]/page.tsx` 在 `getPostBySlug()` 抛错时会执行 `notFound()`（隐藏文章与不存在文章表现一致）
+- [x] T015 [US3] 更新 `app/blog/[slug]/page.tsx` 的 `generateStaticParams()`：只为公开文章生成 params（依赖 `getAllPosts()` 过滤）
+- [x] T016 [US3] 确认 `app/blog/[slug]/page.tsx` 在 `getPostBySlug()` 抛错时会执行 `notFound()`（隐藏文章与不存在文章表现一致）
 - [ ] T017 [US3] 手工验收：访问隐藏文章详情页不展示正文（验证 `dangerouslySetInnerHTML` 不会被执行到）
  
  ---
