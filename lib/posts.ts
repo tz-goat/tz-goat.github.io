@@ -13,6 +13,7 @@ export interface PostMeta {
   description: string;
   /** Normalized tag slugs (ASCII), deduped */
   tags: string[];
+  hidden: boolean;
 }
 
 export interface Post extends PostMeta {
@@ -55,6 +56,17 @@ function parseTagsField(raw: unknown, fileLabel: string): string[] {
   return [...new Set(normalized)];
 }
 
+function parseHiddenField(raw: unknown): boolean {
+  if (raw == null) return false;
+  if (typeof raw === "boolean") return raw;
+  if (typeof raw === "number") return raw !== 0;
+  if (typeof raw === "string") {
+    const v = raw.trim().toLowerCase();
+    return v === "true" || v === "1" || v === "yes";
+  }
+  return Boolean(raw);
+}
+
 function metaFromMatter(
   data: Record<string, unknown>,
   slug: string,
@@ -65,12 +77,14 @@ function metaFromMatter(
   if (tags.length === 0) {
     throw new Error(`${fileLabel}: at least one tag is required.`);
   }
+  const hidden = parseHiddenField(data.hidden);
   return {
     slug,
     title: data.title as string,
     date: data.date as string,
     description: data.description as string,
     tags,
+    hidden,
   };
 }
 
@@ -84,7 +98,8 @@ export function getAllPosts(): PostMeta[] {
       const fileContents = fs.readFileSync(fullPath, "utf8");
       const { data } = matter(fileContents);
       return metaFromMatter(data as Record<string, unknown>, slug, fileName);
-    });
+    })
+    .filter((p) => !p.hidden);
 
   return posts.sort((a, b) => (a.date < b.date ? 1 : -1));
 }
@@ -112,6 +127,9 @@ export async function getPostBySlug(slug: string): Promise<Post> {
   const { data, content } = matter(fileContents);
   const fileName = `${slug}.md`;
   const meta = metaFromMatter(data as Record<string, unknown>, slug, fileName);
+  if (meta.hidden) {
+    throw new Error("Post is hidden");
+  }
 
   const processedContent = await remark().use(html).process(content);
   const contentHtml = processedContent.toString();

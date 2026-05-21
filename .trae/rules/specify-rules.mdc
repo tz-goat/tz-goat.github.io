@@ -5,11 +5,9 @@ alwaysApply: true
 ---
 # my-blog Development Guidelines
 
-Auto-generated from all feature plans. Last updated: 2026-05-12
+Auto-generated from all feature plans. Last updated: 2026-04-06
 
 ## Active Technologies
-- TypeScript 5.x, Node.js (per `@types/node` 20.x) + Next.js 16.1.6 (App Router), React 19.2.3, gray-matter 4.x, remark 15.x, remark-html 16.x (002-hide-posts)
-- Repository filesystem (`posts/*.md`) (002-hide-posts)
 
 - TypeScript 5.x / Node 20+（与 `@types/node` 一致） + Next.js 16.1.6，React 19，gray-matter，remark，remark-html，Tailwind CSS 4 (001-blog-post-tags)
 
@@ -30,7 +28,6 @@ npm run dev; npm run build; npm run lint
 TypeScript 5.x / Node 20+（与 `@types/node` 一致）: Follow standard conventions
 
 ## Recent Changes
-- 002-hide-posts: Added TypeScript 5.x, Node.js (per `@types/node` 20.x) + Next.js 16.1.6 (App Router), React 19.2.3, gray-matter 4.x, remark 15.x, remark-html 16.x
 
 - 001-blog-post-tags: Added TypeScript 5.x / Node 20+（与 `@types/node` 一致） + Next.js 16.1.6，React 19，gray-matter，remark，remark-html，Tailwind CSS 4
 
