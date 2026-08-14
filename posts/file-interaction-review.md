@@ -145,6 +145,37 @@ sequenceDiagram
    2. 若文件超过 50MB，调用 `foss.streamDownload` 返回流数据。
 3. 服务端设置下载响应头，把文件数据返回浏览器。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant Browser as 浏览器
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+
+    User->>FileTable: 点击文件 Download
+    FileTable->>Browser: window.open(downloadFile URL)
+    Browser->>API: GET /api/file/downloadFile<br/>hostKey + path + name + 可选 hash/modTime
+
+    API->>API: 校验 download 权限和参数
+    API->>FileSvc: getDownloadToken(location, 可选 fileHistory)
+    FileSvc-->>API: 返回 fossSpaceId、token、size、fossKey
+    API->>API: 设置 Content-Disposition 等下载响应头
+
+    alt 文件大小 > 50MB
+        API->>FOSS: streamDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件流
+        API->>Browser: 透传文件流
+    else 文件大小不超过 50MB
+        API->>FOSS: simpleDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件数据
+        API-->>Browser: 返回文件数据
+    end
+
+    Browser-->>User: 浏览器下载文件
+```
 
 
 ```JavaScript
@@ -185,7 +216,53 @@ ctx.body = stream;
 8. 服务端用 JSZip 生成 ZIP。
 9. 前端把返回的 Buffer 转成 Blob，并用 FileSaver 保存。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+    participant JSZip as JSZip
+    participant FileSaver as FileSaver
 
+    User->>FileTable: 勾选文件或点击目录下载
+    FileTable->>API: POST /api/file/getFolderInfo<br/>hostKey + folderPath + rowKeys
+    API->>API: 校验 view 权限和参数
+    API->>API: 统计当前层文件数量和大小
+
+    loop 递归处理子目录
+        API->>FileSvc: readDir(hostKey, childPath)
+        FileSvc-->>API: 返回子目录文件列表
+        API->>API: 累加 folderSize 和 fileCount
+    end
+
+    alt fileCount > 10 或 folderSize > 500MB
+        API-->>FileTable: 返回下载限制错误
+        FileTable-->>User: 展示错误提示
+    else 未超过限制
+        API-->>FileTable: 返回 FolderInfo 树
+        FileTable->>FileTable: flattenFolderInfo(folderInfo)
+        FileTable->>API: POST /api/file/batchDownload<br/>folderList + hostKey
+        API->>API: 校验 download 权限
+        API->>JSZip: 创建 zip 对象
+
+        loop folderList 中每个文件
+            API->>FileSvc: getDownloadToken(location)
+            FileSvc-->>API: 返回 FOSS 下载凭证
+            API->>FOSS: simpleDownload 或 multipartDownload
+            FOSS-->>API: 返回文件 data
+            API->>JSZip: zip.file(zipFileName,data)
+        end
+
+        API->>JSZip: generateAsync(nodebuffer)
+        JSZip-->>API: 返回 zip Buffer
+        API-->>FileTable: 返回 zip 数据
+        FileTable->>FileSaver: saveAs(blob, zipName)
+        FileSaver-->>User: 保存 zip 文件
+    end
+```
 
 #### **痛点：同步请求责任太重**
 
@@ -231,6 +308,28 @@ ctx.body = stream;
 6. 如果成功，则生成下载任务。
 7. 将任务投递给后台 Worker。
 
+```mermaid
+sequenceDiagram
+    participant User as 用户
+    participant FE as 前端文件页
+    participant API as API 服务
+    participant Task as 任务系统
+    participant FT as fileTransferService
+
+    User->>FE: 选择文件/目录并点击 Batch Download
+    FE->>API: POST /api/file/createBatchDownloadTask
+    API->>API: 校验参数与 download 权限
+    API->>FT: 递归展开目录与获取真实文件清单
+    FT-->>API: 返回文件树和文件元信息
+    API->>API: 计算 fileCount / totalSize / 目录结构
+    alt 超出限制
+        API-->>FE: 返回校验失败
+    else 校验通过
+        API->>Task: 创建 TASK_TYPE_BATCH_DOWNLOAD
+        Task-->>API: 返回 taskId
+        API-->>FE: 返回 taskId
+    end
+````
 
 
 后台 Worker 接手：
@@ -244,6 +343,34 @@ ctx.body = stream;
 5. 打包完成后写回任务结果，更新任务状态。
 6. 用户在 Task 界面下载生成好的 ZIP 包。
 
+```mermaid
+sequenceDiagram
+    participant Worker as 下载 Worker
+    participant FT as fileTransferService
+    participant FOSS as 对象存储/FOSS
+    participant Task as 任务系统
+    participant FE as 前端
+    participant Browser as 浏览器
+
+    Worker->>Task: 轮询领取 batch download 任务
+    Worker->>Worker: 初始化 zip 流和并发控制器
+    loop 遍历文件清单
+        Worker->>FT: 获取单文件下载 token
+        FT-->>Worker: token + fossKey + size
+        Worker->>FOSS: 以 streamDownload/流式方式拉取文件
+        FOSS-->>Worker: 文件流
+        Worker->>Worker: append 到 zip stream
+    end
+    Worker->>FOSS: 将 zip stream 写入临时存储
+    FOSS-->>Worker: 返回结果位置 zipFossKey
+    Worker->>Task: 更新任务为 SUCCESS，写入 downloadUrl / expiredAt
+
+    FE->>Task: 轮询任务状态
+    Task-->>FE: SUCCESS + downloadUrl
+    FE->>Browser: 触发下载
+    Browser->>FOSS: 请求最终 zip
+    FOSS-->>Browser: 返回 zip 文件流
+```
 
 
 Worker 执行的 demo 代码如下：
@@ -358,6 +485,52 @@ async function runWorker(app) {
 7. FOSS 上传完成后，服务端调用 `fileTransferService.notifyUploadFile`，通知上游系统。
 8. 前端提示上传任务创建成功，后续通过任务状态或列表刷新观察结果。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant Upload as UploadBtn.vue
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+
+    User->>Upload: 点击 Upload 并选择文件
+    Upload->>Upload: 校验文件数量不超过 10
+    Upload->>Upload: 校验扩展名白名单
+    Upload->>Upload: 校验总大小不超过 500MB
+    Upload->>API: POST /api/file/batchUpload<br/>multipart files + hostKey + path
+
+    API->>API: 校验 write 权限
+    API->>API: 校验 multipart 参数
+
+    loop 每个上传文件
+        API->>API: 读取临时文件流
+        API->>API: 计算 SHA1 和文件大小
+        API->>FileSvc: generateUploadFileTask(reqId, location, sha1, size)
+        FileSvc-->>API: 返回 taskId、fossKey、spaceId、token
+
+        alt 文件大小 > 50MB
+            API->>FOSS: createMultipartUpload(spaceId,fossKey,partSize)
+            FOSS-->>API: 返回 uploadId
+            loop 每个 10MB 分片
+                API->>FOSS: uploadPart(uploadId,partNum,data)
+                FOSS-->>API: 返回 etag
+            end
+            API->>FOSS: completeMultipartUpload(uploadId,parts)
+            FOSS-->>API: 分块上传完成
+        else 文件大小不超过 50MB
+            API->>FOSS: simpleUpload(spaceId,fossKey,data,token)
+            FOSS-->>API: 上传完成
+        end
+
+        API->>FileSvc: notifyUploadFile(reqId, taskId)
+        FileSvc-->>API: 确认通知
+    end
+
+    API-->>Upload: 返回 taskIdList
+    Upload-->>User: 提示上传任务创建成功
+```
+
 
 
 #### **痛点：请求链路过长，内存容易占用过高**
@@ -404,6 +577,55 @@ async function runWorker(app) {
 4. 正式上传完成后，Worker 调用 `notifyUploadFile(taskId)` 通知上游。
 5. 通知成功后，再删除 staging 暂存对象。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FE as 前端 Upload
+    participant API as BFF API
+    participant Stage as Staging Storage
+    participant Worker as Upload Worker
+    participant FileSvc as fileTransferService
+    participant FOSS as FOSS
+
+    User->>FE: 选择文件并点击上传
+    FE->>FE: 本地轻量校验
+    FE->>API: POST /api/file/upload/init
+    API->>API: 校验权限、数量、扩展名、总大小
+    API-->>FE: 返回 uploadBatchId + uploadFileId 列表
+
+    loop 每个文件
+        FE->>API: POST /api/file/upload/stage
+        API->>API: 校验 uploadFileId 状态
+        API->>Stage: 流式写入暂存区
+        API->>API: 流式计算 SHA1 / actualSize
+        Stage-->>API: staging 完成
+        API->>FileSvc: generateUploadFileTask(location, sha1, size)
+        FileSvc-->>API: 返回 taskId + fossKey + credential
+        API->>Worker: 投递 UploadStagedFile 任务
+        API-->>FE: 返回 taskId
+    end
+
+    par 后台异步执行
+        Worker->>Stage: 读取 staging 文件流
+        alt 文件较小
+            Worker->>FOSS: StreamUpload 或 simpleUpload(stream)
+        else 文件较大
+            Worker->>FOSS: createMultipartUpload
+            loop 有限并发分片上传
+                Worker->>FOSS: uploadPart(partNum, chunkStream)
+                FOSS-->>Worker: etag
+            end
+            Worker->>FOSS: completeMultipartUpload
+        end
+        Worker->>FileSvc: notifyUploadFile(taskId)
+        FileSvc-->>Worker: 通知成功
+        Worker->>Stage: 删除暂存对象
+    and 前端轮询
+        FE->>API: 查询 uploadBatch/task 状态
+        API-->>FE: 返回状态与错误信息
+    end
+```
 
 
 #### **收益**

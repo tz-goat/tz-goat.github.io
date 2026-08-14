@@ -72,7 +72,6 @@ body {
   overflow-x: auto;
   border: 1px solid var(--code-block-border);
   border-radius: 0.75rem;
-  background-color: var(--code-block-background);
   padding: 1rem;
   cursor: zoom-in;
   transition:
@@ -197,7 +196,7 @@ body {
   border-radius: 9999px;
   background: var(--background);
   color: var(--foreground);
-  padding: 0.45rem 0.85rem;
+  padding: 0.25rem 0.65rem;
   font-size: 0.875rem;
   cursor: pointer;
 }

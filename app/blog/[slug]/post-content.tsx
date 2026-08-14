@@ -281,7 +281,7 @@ export default function PostContent({ html }: PostContentProps) {
               className="diagram-lightbox__close"
               onClick={() => setMermaidPreview(null)}
             >
-              关闭
+              X
             </button>
             <div
               className="diagram-lightbox__content"
