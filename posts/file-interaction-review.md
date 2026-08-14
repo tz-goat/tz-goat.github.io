@@ -91,7 +91,41 @@ ctx.set({
 
 同时支持文件的历史版本下载，在这个流程中（获取 downloadToken）时额外传入 `hash` 和 `modTime`，由下载 token 请求中的 `fileHistory` 指定目标版本。
 
+```mermaid
+sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant Browser as 浏览器
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
 
+    User->>FileTable: 点击文件 Download
+    FileTable->>Browser: window.open(downloadFile URL)
+    Browser->>API: GET /api/file/downloadFile<br/>hostKey + path + name + 可选 hash/modTime
+
+    API->>API: 校验 download 权限和参数
+    API->>FileSvc: getDownloadToken(location, 可选 fileHistory)
+    FileSvc-->>API: 返回 fossSpaceId、token、size、fossKey
+
+    alt 文件大小 > 50MB
+        API->>FOSS: createMultipartDownload(spaceId,fossKey)
+        FOSS-->>API: 返回 downloadId、md5、size
+        loop 按 10MB 分片，最多 5 并发分组
+            API->>FOSS: downloadPart(downloadId,partNum,partSize)
+            FOSS-->>API: 返回分片 data
+        end
+        API->>API: Buffer.concat 分片并校验 MD5
+    else 文件大小不超过 50MB
+        API->>FOSS: simpleDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件数据
+    end
+
+    API->>API: 设置 Content-Disposition 等下载响应头
+    API-->>Browser: 返回文件数据
+    Browser-->>User: 浏览器下载文件
+```
 
 #### **痛点：BFF 层吃进整块文件内存**
 

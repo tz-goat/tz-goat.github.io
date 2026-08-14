@@ -34,6 +34,26 @@ body {
   font-family: Arial, Helvetica, sans-serif;
 }
 
+.mermaid-diagram {
+  margin: 1.5rem 0;
+  overflow-x: auto;
+  border: 1px solid var(--code-block-border);
+  /* border-radius: 0.75rem; */
+  /* background-color: var(--code-block-background); */
+  padding: 1rem;
+}
+
+.mermaid-diagram svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.mermaid-diagram[data-mermaid-error="true"] {
+  white-space: pre-wrap;
+  font-family: var(--font-geist-mono), monospace;
+}
+
 /* 代码块外层卡片：背景、边框、圆角，以及长行自动折行 */
 .prose :where(pre):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   background-color: var(--code-block-background);

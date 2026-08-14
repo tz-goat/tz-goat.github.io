@@ -48,6 +48,82 @@ function normalizeMarkdownCodeLanguages() {
   };
 }
 
+function rehypeMermaidBlocks() {
+  type HastNode = {
+    type?: string;
+    tagName?: string;
+    value?: string;
+    properties?: Record<string, unknown>;
+    children?: HastNode[];
+  };
+
+  const getClassNames = (node: HastNode): string[] => {
+    const className = node.properties?.className;
+    if (Array.isArray(className)) {
+      return className.map((value) => String(value));
+    }
+    if (typeof className === "string") {
+      return className.split(/\s+/).filter(Boolean);
+    }
+    return [];
+  };
+
+  const getTextContent = (node: HastNode): string => {
+    if (node.type === "text") {
+      return node.value ?? "";
+    }
+    if (!Array.isArray(node.children)) {
+      return "";
+    }
+    return node.children.map(getTextContent).join("");
+  };
+
+  return (tree: HastNode) => {
+    const visit = (node: HastNode) => {
+      if (!Array.isArray(node.children)) {
+        return;
+      }
+
+      node.children = node.children.map((child) => {
+        if (
+          child.type === "element" &&
+          child.tagName === "pre" &&
+          Array.isArray(child.children) &&
+          child.children.length === 1
+        ) {
+          const code = child.children[0];
+          if (
+            code?.type === "element" &&
+            code.tagName === "code" &&
+            getClassNames(code).includes("language-mermaid")
+          ) {
+            return {
+              type: "element",
+              tagName: "div",
+              properties: {
+                className: ["mermaid-diagram", "not-prose"],
+                dataMermaid: "true",
+                ariaLabel: "Mermaid diagram",
+              },
+              children: [
+                {
+                  type: "text",
+                  value: getTextContent(code),
+                },
+              ],
+            };
+          }
+        }
+
+        visit(child);
+        return child;
+      });
+    };
+
+    visit(tree);
+  };
+}
+
 export interface PostMeta {
   slug: string;
   title: string;
@@ -177,6 +253,7 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     .use(normalizeMarkdownCodeLanguages)
     .use(remarkGfm)
     .use(remarkRehype)
+      .use(rehypeMermaidBlocks)
     .use(rehypePrettyCode, prettyCodeOptions)
     .use(rehypeStringify)
     .process(content);
