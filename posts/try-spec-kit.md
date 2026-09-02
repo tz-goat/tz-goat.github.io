@@ -8,35 +8,86 @@ tags:
 ---
 
 开发这个blog网站的时候我是用了当下很火的Spec kit开发流程
+to-do： 这里还需要一个目录，目录，目录
+
+<!-- 写spect-kit应该cover什么
+
+what
+
+优点
+
+缺点
+
+怎么使用spec-kit， 这其中包含哪些坑点
+- 这里可以增加一个命令行
+- 
+
+如何用最好，什么样的项目适合用spec-kit
+
+创建一个项目用spec-kit,  -->
+
+## 0701速记
+
+constitution可以规定项目的整体原则，比如这个项目的目的，代码风格
+`speckit-constitution` 这是一个网页游戏应用，应当保持代码整洁，核心代码要有注释提示
+- 不仅可以通过skill更新，也可以直接让agent去更新这个文件：.specify/memory/constitution.md
+
+Clarify underspecified areas (recommended before /speckit.plan);
+
+specify声明特性，在constitution完成后执行，声明你想增加的特性，
+- `speckit-specify` 创建一个基础的web 小游戏应用平台，主要用途娱乐，教育，儿童友好，方便我在开发过程中熟悉基础算法知识
+生成一个spec.md:其中包含多个用户案例，user story，比如用户可以无需登陆打开游戏试玩
+functional requirements
+- 网站必须提供游戏列表供选择，游戏中必须包含相应的教育性内容
+
+PLAn技术选型
+- 我专门挑了我不太熟悉的html canavs和naive UI,
+- 有research.md对于技术选型做调研，对比其他同类型技术
+- data-model.md，对于选中的游戏的数据模型
+
+taks将任务细化成具体的可实现的操作
+- 这一步就可以切换模型，切换成可以去具体实现
+
+
+## 什么是Spec-kit
+
+Spec-kit是一个Spec-Driven Development开发思想的实践工具，通过安装specify-cli命令行工具，可以细化开发流程中的特性
+
+spec其实就是specify的缩写, 翻译过来就是说详细点,Spec-Driven Development的核心在于将以往**代码优先于说明**的优先级反过来，在添加特性时，尽可能细化需求描述，从而使得代码更加贴合预期的需求实现
+
 
 ## 为什么要写spec-kit
 
 借着搭博客网站的机会，了解下最近很火的spec-kit开发全流程，评估这个流程是否适合个人项目的长期使用，并总结下自己在使用过程中的体会与经验
 
-spec-kit分步骤执行，首先要通过constituion初始化项目, 然后用specify命令增加需求，接着再用clarify帮助agent澄清本次新增特性的疑惑点，agent随后用plan命令创建实行计划，接着用tasks列出细致的实现细节，最后运行implement命令按照tasks中的步骤实现功能
-
 ## 参考
 
-参考原作者Den Delimarsky的教程：
+参考原作者Den Delimarsky的教程, 视频里Den演示了如何通过spec-kit在自己**已有**的博客项目里上增加一个reading list功能：
 
-- https://www.youtube.com/watch?v=SGHIQTsPzuY&t
-- 原教程Den演示了如何通过spec-kit在自己的blog网站上增加一个reading list功能
+- [Using GitHub Spec Kit with your EXISTING PROJECTS](https://www.youtube.com/watch?v=SGHIQTsPzuY&t)
 
-## 我对Spec kit的看法
 
-spec其实就是specify, 翻译过来就是说详细点
 
-一开始我是有点不看好，觉得开发前置工作量太多，目前的主流思想都是尽量精简上下文，它每个步骤缺都要加一堆文件，
 
-- 特别是初始化的时候，spec init创建了一个`.specify`引入一堆文件，总感觉小项目有了它太重，确实这会导致等待agent运行完成的时间增长
+## 安装
 
-但是运行过之后我对于这种开发流程有了新的认识，我不再觉得这些文件是累赘
+```
+uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z
 
-它确实能帮助梳理需求，特别是对于复杂特性，能保证没有遗漏的edge case，比如我增加tag功能，agent会帮我梳理出哪些路由需要增加，哪些文件需要修改，哪些测试用例需要增加，哪些文档需要补充，而且这些文件都是模板化的，可以复用，所以不会增加太多工作量
-
-还有spec-kit会在实现特性的过程中自动切换分支，这一点很方便
+```
 
 ## 实际执行
+
+在实际使用specify之前需要先初始化项目，通常要引入，就运行下面的命令
+```
+specify init --here
+```
+
+spec-kit分步骤执行，首先要通过constituion初始化项目, 然后用specify命令增加需求，接着再用clarify帮助agent澄清本次新增特性的疑惑点，agent随后用plan命令创建实行计划，接着用tasks列出细致的实现细节，最后运行implement命令按照tasks中的步骤实现功能
+
+比如过我要给我的博客增加一个特性，那在这之前
+- const: 初始化项目
+- /speckit.plan command to provide your tech stack and architecture choices.
 
 ### spec-kit的文件结构
 
@@ -153,9 +204,23 @@ to-do: plan和tasks的区别是什么，这里要填什么，跟前面的specify
 
 - 它底层是怎么验证的是个黑盒，最好还是自己做下测试
 
-## 我的
-
-- 我的疑问：
+## Q&A
   - Q:为什么要分这么多步骤，直接在prompt中写不行就行
   - A: 防止under-specify, 我们写prompt的时候不一定能全部描述清楚需求，所以需要分步骤执行
   - Q：under-specify的部分可以理解，LLM需要更细节，在乎上下文，但是plan和tasks有必要分开吗
+
+  
+## 我的评价
+
+spec其实就是specify, 翻译过来就是说详细点
+
+一开始我是有点不看好，觉得开发前置工作量太多，目前的主流思想都是尽量精简上下文，它每个步骤缺都要加一堆文件，
+
+- 特别是初始化的时候，spec init创建了一个`.specify`引入一堆文件，总感觉小项目有了它太重，确实这会导致等待agent运行完成的时间增长
+
+但是运行过之后我对于这种开发流程有了新的认识，我不再觉得这些文件是累赘
+
+它确实能帮助梳理需求，特别是对于复杂特性，能保证没有遗漏的edge case，比如我增加tag功能，agent会帮我梳理出哪些路由需要增加，哪些文件需要修改，哪些测试用例需要增加，哪些文档需要补充，而且这些文件都是模板化的，可以复用，所以不会增加太多工作量
+
+还有spec-kit会在实现特性的过程中自动切换分支，这一点很方便
+

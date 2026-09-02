@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPostBySlug, getAllPosts } from "@/lib/posts";
 import { notFound } from "next/navigation";
+import PostContent from "./post-content";
 
 interface Props {
   params: Promise<{ slug: string }>;
@@ -64,10 +65,7 @@ export default async function PostPage({ params }: Props) {
             </ul>
           </header>
 
-          <div
-            className="prose prose-zinc dark:prose-invert max-w-none"
-            dangerouslySetInnerHTML={{ __html: post.contentHtml }}
-          />
+            <PostContent html={post.contentHtml} />
         </article>
       </main>
     </div>
