@@ -2,9 +2,127 @@ import fs from "fs";
 import path from "path";
 import matter from "gray-matter";
 import { remark } from "remark";
-import html from "remark-html";
+import remarkGfm from "remark-gfm";
+import remarkRehype from "remark-rehype";
+import rehypePrettyCode, {
+  type Options as RehypePrettyCodeOptions,
+} from "rehype-pretty-code";
+import rehypeStringify from "rehype-stringify";
 
 const postsDirectory = path.join(process.cwd(), "posts");
+const prettyCodeOptions: RehypePrettyCodeOptions = {
+  theme: {
+    light: "github-light",
+    dark: "github-dark",
+  },
+  keepBackground: false,
+  defaultLang: {
+    block: "text",
+    inline: "text",
+  },
+};
+
+function normalizeMarkdownCodeLanguages() {
+  type MarkdownNode = {
+    type?: string;
+    lang?: string;
+    children?: MarkdownNode[];
+  };
+
+  return (tree: MarkdownNode) => {
+    const visit = (node: MarkdownNode) => {
+      if (node.type === "code") {
+        if (typeof node.lang === "string") {
+          node.lang = node.lang.trim().toLowerCase();
+        }
+      }
+
+      if ("children" in node && Array.isArray(node.children)) {
+        for (const child of node.children) {
+          visit(child);
+        }
+      }
+    };
+
+    visit(tree);
+  };
+}
+
+function rehypeMermaidBlocks() {
+  type HastNode = {
+    type?: string;
+    tagName?: string;
+    value?: string;
+    properties?: Record<string, unknown>;
+    children?: HastNode[];
+  };
+
+  const getClassNames = (node: HastNode): string[] => {
+    const className = node.properties?.className;
+    if (Array.isArray(className)) {
+      return className.map((value) => String(value));
+    }
+    if (typeof className === "string") {
+      return className.split(/\s+/).filter(Boolean);
+    }
+    return [];
+  };
+
+  const getTextContent = (node: HastNode): string => {
+    if (node.type === "text") {
+      return node.value ?? "";
+    }
+    if (!Array.isArray(node.children)) {
+      return "";
+    }
+    return node.children.map(getTextContent).join("");
+  };
+
+  return (tree: HastNode) => {
+    const visit = (node: HastNode) => {
+      if (!Array.isArray(node.children)) {
+        return;
+      }
+
+      node.children = node.children.map((child) => {
+        if (
+          child.type === "element" &&
+          child.tagName === "pre" &&
+          Array.isArray(child.children) &&
+          child.children.length === 1
+        ) {
+          const code = child.children[0];
+          if (
+            code?.type === "element" &&
+            code.tagName === "code" &&
+            getClassNames(code).includes("language-mermaid")
+          ) {
+            return {
+              type: "element",
+              tagName: "div",
+              properties: {
+                className: ["mermaid-diagram", "not-prose"],
+                dataMermaid: "true",
+                ariaLabel: "Mermaid diagram",
+              },
+              children: [
+                {
+                  type: "text",
+                  value: getTextContent(code),
+                },
+              ],
+            };
+          }
+        }
+
+        visit(child);
+        return child;
+      });
+    };
+
+    visit(tree);
+  };
+}
 
 export interface PostMeta {
   slug: string;
@@ -131,7 +249,14 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     throw new Error("Post is hidden");
   }
 
-  const processedContent = await remark().use(html).process(content);
+  const processedContent = await remark()
+    .use(normalizeMarkdownCodeLanguages)
+    .use(remarkGfm)
+    .use(remarkRehype)
+      .use(rehypeMermaidBlocks)
+    .use(rehypePrettyCode, prettyCodeOptions)
+    .use(rehypeStringify)
+    .process(content);
   const contentHtml = processedContent.toString();
 
   return {
