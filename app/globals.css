@@ -2,10 +2,16 @@
 @plugin "@tailwindcss/typography";
 
 /**
- * @section 主题变量
- * @description 维护全局基础色与代码块/行内代码的颜色 token。
- * 正文、代码块、Mermaid、Lightbox 等模块统一从这里取值，
- * 保证深浅模式切换时只需要修改变量本身。
+ * @description 把 Tailwind 的 `dark:` 变体切到类选择器模式。
+ * ThemeProvider 会在 `html` 上维护 `.dark` class，这样页面里的 `dark:*`
+ * 工具类才能跟随手动主题切换，而不是继续绑定系统媒体查询。
+ */
+@custom-variant dark (&:where(.dark, .dark *));
+
+/**
+ * @description 主题 token 的默认值使用亮色。
+ * ThemeProvider 会把最终主题结果写到 `html[data-theme]`，
+ * 然后由下面的覆盖规则决定页面真正使用哪套颜色。
  */
 :root {
   --background: #ffffff;
@@ -30,26 +36,22 @@
 }
 
 /**
- * @section 深色模式变量覆盖
- * @description 基于 `prefers-color-scheme` 覆盖基础 token。
- * 所有消费这些变量的模块都会自动进入深色模式，
- * 避免每个模块分别写深色分支样式。
+ * @description 深色主题不再直接跟随系统媒体查询，
+ * 而是统一听 `html[data-theme="dark"]` 的结果。
+ * 这样用户手动切换 light / dark / system 时，CSS 能和 Context 保持一致。
  */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-    --code-block-background: #18181b;
-    --code-block-border: #3f3f46;
-    --inline-code-background: #27272a;
-    --inline-code-color: #f4f4f5;
-  }
+html[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
+  --code-block-background: #18181b;
+  --code-block-border: #3f3f46;
+  --inline-code-background: #27272a;
+  --inline-code-color: #f4f4f5;
 }
 
 /**
- * @section 基础排版重置
- * @description 为 body 提供默认背景、前景色与无衬线字体，
- * 保证站点基础风格在 Tailwind 基础层之外稳定一致。
+ * @description body 只消费主题 token，不关心主题来源。
+ * 这也是主题系统分层的关键：样式层不需要知道 Context 的内部逻辑。
  */
 body {
   background: var(--background);
@@ -286,20 +288,16 @@ body {
  * 亮色模式下读取 Shiki 注入的 --shiki-light 变量，
  * 将 token 的颜色真正渲染到页面上。
  */
-.prose
-  :where(pre [style*="--shiki-light"]):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+.prose :where(pre [style*="--shiki-light"]):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
   color: var(--shiki-light);
 }
 
-@media (prefers-color-scheme: dark) {
-  /**
-   * 深色模式下切换到 --shiki-dark 变量，保证深浅两套
-   * 主题都能获得对应的代码高亮颜色。
-   */
-  .prose
-    :where(pre [style*="--shiki-dark"]):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
-    color: var(--shiki-dark);
-  }
+/**
+ * 深色模式下切换到 --shiki-dark 变量，保证代码高亮跟随站点实际主题，
+ * 而不是继续跟随系统主题媒体查询。
+ */
+html[data-theme="dark"] .prose :where(pre [style*="--shiki-dark"]):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  color: var(--shiki-dark);
 }
 
 /**
@@ -324,10 +322,8 @@ body {
  * 移除 prose 默认会自动补的 `::before/::after` 反引号内容，
  * 避免与自定义外观重复叠加。
  */
-.prose
-  :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::before,
-.prose
-  :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::after {
+.prose :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::before,
+.prose :where(code):not(:where(pre code, [class~="not-prose"], [class~="not-prose"] *))::after {
   content: none;
 }
 
@@ -335,7 +331,6 @@ body {
  * 行内 code 里如果出现 [data-line] 包装，恢复为 inline，
  * 避免这类包装层被当成块级元素导致句子中间被打断。
  */
-.prose
-  :where(code span[data-line]):not(:where(pre code span[data-line], [class~="not-prose"], [class~="not-prose"] *)) {
+.prose :where(code span[data-line]):not(:where(pre code span[data-line], [class~="not-prose"], [class~="not-prose"] *)) {
   display: inline;
 }
