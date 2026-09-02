@@ -1,0 +1,680 @@
+<!DOCTYPE html><!--J8DoQpK4_OGcGKh5Gk7eZ--><html lang="en"><head><meta charSet="utf-8"/><meta name="viewport" content="width=device-width, initial-scale=1"/><link rel="preload" href="/_next/static/media/797e433ab948586e-s.p.29207c2f.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="preload" href="/_next/static/media/caa3a2e1cccd8315-s.p.3b6cae6d.woff2" as="font" crossorigin="" type="font/woff2"/><link rel="stylesheet" href="/_next/static/chunks/78328e927a0bfa2f.css" data-precedence="next"/><link rel="preload" as="script" fetchPriority="low" href="/_next/static/chunks/e15aa42f6ef0f66c.js"/><script src="/_next/static/chunks/6b9a34184780438e.js" async=""></script><script src="/_next/static/chunks/000fca8c12581532.js" async=""></script><script src="/_next/static/chunks/c4b45c058479ca48.js" async=""></script><script src="/_next/static/chunks/turbopack-e9fbdc882b88db47.js" async=""></script><script src="/_next/static/chunks/e3e74710d54a4448.js" async=""></script><script src="/_next/static/chunks/ff0e1f204386c9a8.js" async=""></script><script src="/_next/static/chunks/cbd29fc56957d6dd.js" async=""></script><meta name="next-size-adjust" content=""/><title>富途文件管理中台系统架构分析</title><meta name="description" content="复盘我在富途做的文件管理中台项目，包含技术栈选型，下载功能和上传功能全链路分析和优化方案，架构设计的思考"/><link rel="icon" href="/favicon.ico?favicon.0b3bf435.ico" sizes="256x256" type="image/x-icon"/><script src="/_next/static/chunks/a6dad97d9634a72d.js" noModule=""></script></head><body class="geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased"><div hidden=""><!--$--><!--/$--></div><div class="min-h-screen bg-white dark:bg-black"><main class="mx-auto max-w-2xl px-6 py-20"><a class="mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100" href="/blog">← 所有文章</a><article><header class="mb-10"><time class="text-sm text-zinc-400">2026-08-13</time><h1 class="mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">富途文件管理中台系统架构分析</h1><p class="mt-3 text-lg text-zinc-500 dark:text-zinc-400">复盘我在富途做的文件管理中台项目，包含技术栈选型，下载功能和上传功能全链路分析和优化方案，架构设计的思考</p><ul class="mt-4 flex flex-wrap gap-2"><li><a class="inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600" href="/tags/futu">futu</a></li><li><a class="inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600" href="/tags/file-download">file-download</a></li></ul></header><div class="prose prose-zinc dark:prose-invert max-w-none"><h2>业务背景</h2>
+<p>富途的业务同事需要从多个上游券商获取文件，但是不同上游各自有各自的中台系统，比较分散，缺少一个统一的文件管理中台</p>
+<h2>文章定位</h2>
+<p>本文重点在于复盘文件中台场景下的几个关键架构决策，而不是一一列举介绍项目的所有功能。考虑到这是一个 3 年前的旧项目，很多实现要受当时下游能力和交付节奏限制。文中的后续优化，部分是已落地演进，部分是复盘后的理想方向。</p>
+<h2>技术栈</h2>
+<p>项目选用当时普遍的 Vue 3 + Ant Design Vue、Egg.js、TypeScript、Protobuf.js，这也是富途内部最常用的后台技术栈</p>
+<p>这个项目不是传统的前端 CRUD，而是 BFF 编排层，核心在于基于 Egg.js 的 BFF 层逻辑，通过 Protobuf.js 对接 3 个下游服务：</p>
+<ol>
+<li><strong>FOSS</strong>: 文件管理，上传，下载，分块传输</li>
+<li><strong>fileTransferService</strong>：负责业务文件能力，对接文件上传，刷新，文件夹创建任务</li>
+<li><strong>uFTConsoleService</strong>：任务管理，查询，重试，停止，查询任务日志</li>
+</ol>
+<p>对比传统的 REST API，Protobuf 有以下优势：</p>
+<ol>
+<li>Protobuf 文件提前定义好：服务名、方法名、请求结构、返回结构，不会出现接口文档跟实际调用不一致的情况</li>
+<li>Protobuf 不传 JSON 文本，请求和响应都是按 Protobuf 的二进制协议编码，体积小，解析成本低，传输速度快</li>
+<li>采用 gRPC 传输，底层是 HTTP/2，可以实现多路传输，速度更快</li>
+<li>对于文件中台管理项目，Protobuf 协议在传输文件的时候以 bytes 直接进行二进制内容传输，而 REST + JSON 还需要对文件转换成 Base64 字符串</li>
+</ol>
+<p>BFF 可以直接调用 Protobuf 文件自动生成的服务，通过 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>ctx.service.xxx</span></span></code></span> 类似的格式进行调用</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="javascript" data-theme="github-light github-dark"><code data-language="javascript" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> ctx.service.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">notifyUploadFile</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  reqId: ctx.helper.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">requestId</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(),</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  taskId,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">});</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> completeUploadRes</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> ctx.service.foss.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">completeMultipartUpload</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    {</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      uploadId,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      parts: uploadResList,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    },</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    fossOption</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  );</span></span></code></pre></figure>
+<h2>整体架构设计</h2>
+<h3>UI 层</h3>
+<p>File 页面，负责展示不同上游的文件，并提供对应操作</p>
+<ol>
+<li>横向 Tab 展示上游列表，点击切换上游，同时切换下方的文件列表</li>
+<li><strong>文件列表</strong>作为核心模块，分行展示文件和文件夹，包含以下元数据：文件名、大小、文件地址，右侧操作列支持：下载、删除、查看文件历史操作</li>
+<li>筛选支持全局筛选和本地筛选，以及按文件状态筛选</li>
+</ol>
+<p><img src="/img/file-0813/file-demo.jpeg" alt="File 页面"></p>
+<p>Task 页面，用于文件删除、创建、同步等任务的状态管理</p>
+<p><img src="/img/file-0813/task-demo.jpeg" alt="Task 页面"></p>
+<h3>单文件下载</h3>
+<h4><strong>1.0 流程</strong></h4>
+<p>当时下游 FOSS 服务还没有成熟的流式下载能力，BFF 只能先承担下载拼接职责。</p>
+<ol>
+<li>用户点击文件行的 Download。</li>
+<li>前端打开下载 URL：<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>/api/file/downloadFile?hostKey=...&#x26;path=...&#x26;name=...</span></span></code></span>。</li>
+<li>服务端根据上游 hostKey 校验 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>download</span></span></code></span> 权限。</li>
+<li>服务端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.getDownloadToken</span></span></code></span> 获取 FOSS 下载凭证。
+<ol>
+<li>若文件小于等于 50MB，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.simpleDownload</span></span></code></span>。</li>
+<li>若文件超过 50MB，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.createMultipartDownload</span></span></code></span> 后分片下载，并做 MD5 校验。</li>
+</ol>
+</li>
+<li>服务端设置下载响应头，把文件数据返回浏览器。</li>
+</ol>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="javascript" data-theme="github-light github-dark"><code data-language="javascript" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">ctx.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">set</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">  'Content-Length'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">: data.</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">length</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> +</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> ''</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">  'Content-Type'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">'application/force-download'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">  'Content-Disposition'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">`attachment; filename=${</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">encodeURIComponent</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">(</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">query</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">name</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">)</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">}`</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">  'Cache-Control'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">'no-cache'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">});</span></span></code></pre></figure>
+<p>同时支持文件的历史版本下载，在这个流程中（获取 downloadToken）时额外传入 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>hash</span></span></code></span> 和 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>modTime</span></span></code></span>，由下载 token 请求中的 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileHistory</span></span></code></span> 指定目标版本。</p>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant Browser as 浏览器
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+
+    User->>FileTable: 点击文件 Download
+    FileTable->>Browser: window.open(downloadFile URL)
+    Browser->>API: GET /api/file/downloadFile&#x3C;br/>hostKey + path + name + 可选 hash/modTime
+
+    API->>API: 校验 download 权限和参数
+    API->>FileSvc: getDownloadToken(location, 可选 fileHistory)
+    FileSvc-->>API: 返回 fossSpaceId、token、size、fossKey
+
+    alt 文件大小 > 50MB
+        API->>FOSS: createMultipartDownload(spaceId,fossKey)
+        FOSS-->>API: 返回 downloadId、md5、size
+        loop 按 10MB 分片，最多 5 并发分组
+            API->>FOSS: downloadPart(downloadId,partNum,partSize)
+            FOSS-->>API: 返回分片 data
+        end
+        API->>API: Buffer.concat 分片并校验 MD5
+    else 文件大小不超过 50MB
+        API->>FOSS: simpleDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件数据
+    end
+
+    API->>API: 设置 Content-Disposition 等下载响应头
+    API-->>Browser: 返回文件数据
+    Browser-->>User: 浏览器下载文件
+</div>
+<h4><strong>痛点：BFF 层吃进整块文件内存</strong></h4>
+<p>对于小文件下载，这个流程没有什么问题，但是大文件下载的话当前请求会把所有分片都放在内存里，<strong>然后 Buffer.concat 合并成完整文件</strong>。</p>
+<p>如果一个文件 500MB，同时 5 个用户下载，服务端内存压力会很明显。</p>
+<h4><strong>演进方案：小文件直下，大文件流下载</strong></h4>
+<p>下游文件存储服务 FOSS 后续开始支持流下载传输，对于大文件可以不再处理分块拼接，而是直接用流传输的方式，通过一个请求完成下载。</p>
+<p>设计后的新流程如下：对比原流程，UI 层和 BFF 层鉴权逻辑不改，大小文件处理逻辑改为：小文件直下，大文件流式处理。</p>
+<ol>
+<li>用户在 UI 层点击下载链接触发下载请求，BFF 层校验 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>download</span></span></code></span> 权限。</li>
+<li>服务端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.getDownloadToken</span></span></code></span> 获取 FOSS 下载凭证。
+<ol>
+<li>若文件小于等于 50MB，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.simpleDownload</span></span></code></span>。</li>
+<li>若文件超过 50MB，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.streamDownload</span></span></code></span> 返回流数据。</li>
+</ol>
+</li>
+<li>服务端设置下载响应头，把文件数据返回浏览器。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant Browser as 浏览器
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+
+    User->>FileTable: 点击文件 Download
+    FileTable->>Browser: window.open(downloadFile URL)
+    Browser->>API: GET /api/file/downloadFile&#x3C;br/>hostKey + path + name + 可选 hash/modTime
+
+    API->>API: 校验 download 权限和参数
+    API->>FileSvc: getDownloadToken(location, 可选 fileHistory)
+    FileSvc-->>API: 返回 fossSpaceId、token、size、fossKey
+    API->>API: 设置 Content-Disposition 等下载响应头
+
+    alt 文件大小 > 50MB
+        API->>FOSS: streamDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件流
+        API->>Browser: 透传文件流
+    else 文件大小不超过 50MB
+        API->>FOSS: simpleDownload(spaceId,fossKey,token)
+        FOSS-->>API: 返回文件数据
+        API-->>Browser: 返回文件数据
+    end
+
+    Browser-->>User: 浏览器下载文件
+</div>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="javascript" data-theme="github-light github-dark"><code data-language="javascript" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> stream</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> ctx.service.foss.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">streamDownload</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  { spaceId: fossSpaceId, filename: fossKey },</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  {</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    timeout: </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">FOSS_TIMEOUT</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    srpcHeaders: {</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      customizedHeader: { </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">'X-Foss-Token'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">: token },</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    },</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">ctx.body </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">=</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> stream;</span></span></code></pre></figure>
+<h4><strong>收益</strong></h4>
+<ol>
+<li>减少并发请求数，单个大文件现在同样是单个请求。</li>
+<li>减少了需要设计分块请求并发的系统复杂度。</li>
+<li>减少服务器的内存压力，现在文件不会分块下载好后再拼起来堆到内存中，而是按照流格式输出到前端。</li>
+</ol>
+<h3>批量文件下载</h3>
+<p>包含多文件下载和文件夹下载。</p>
+<h4><strong>1.0 流程</strong></h4>
+<p>第一版目标是先快速交付可用能力，因此优先采用同步打包方案。</p>
+<ol>
+<li>用户勾选多个文件/文件夹，或点击目录下载。</li>
+<li>前端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>/api/file/getFolderInfo</span></span></code></span>，提交当前 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>folderPath</span></span></code></span>、<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>hostKey</span></span></code></span> 和选中项。</li>
+<li>服务端递归读取目录内容，统计文件数量和总大小。</li>
+<li>若超过 10 个文件或 500MB，服务端直接报错。</li>
+<li>前端把服务端返回的树形目录信息扁平化为 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>folderList</span></span></code></span>。</li>
+<li>前端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>/api/file/batchDownload</span></span></code></span>。</li>
+<li>服务端对每个文件申请下载 token 并从 FOSS 拉取内容。</li>
+<li>服务端用 JSZip 生成 ZIP。</li>
+<li>前端把返回的 Buffer 转成 Blob，并用 FileSaver 保存。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FileTable as FileTable.vue
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+    participant JSZip as JSZip
+    participant FileSaver as FileSaver
+
+    User->>FileTable: 勾选文件或点击目录下载
+    FileTable->>API: POST /api/file/getFolderInfo&#x3C;br/>hostKey + folderPath + rowKeys
+    API->>API: 校验 view 权限和参数
+    API->>API: 统计当前层文件数量和大小
+
+    loop 递归处理子目录
+        API->>FileSvc: readDir(hostKey, childPath)
+        FileSvc-->>API: 返回子目录文件列表
+        API->>API: 累加 folderSize 和 fileCount
+    end
+
+    alt fileCount > 10 或 folderSize > 500MB
+        API-->>FileTable: 返回下载限制错误
+        FileTable-->>User: 展示错误提示
+    else 未超过限制
+        API-->>FileTable: 返回 FolderInfo 树
+        FileTable->>FileTable: flattenFolderInfo(folderInfo)
+        FileTable->>API: POST /api/file/batchDownload&#x3C;br/>folderList + hostKey
+        API->>API: 校验 download 权限
+        API->>JSZip: 创建 zip 对象
+
+        loop folderList 中每个文件
+            API->>FileSvc: getDownloadToken(location)
+            FileSvc-->>API: 返回 FOSS 下载凭证
+            API->>FOSS: simpleDownload 或 multipartDownload
+            FOSS-->>API: 返回文件 data
+            API->>JSZip: zip.file(zipFileName,data)
+        end
+
+        API->>JSZip: generateAsync(nodebuffer)
+        JSZip-->>API: 返回 zip Buffer
+        API-->>FileTable: 返回 zip 数据
+        FileTable->>FileSaver: saveAs(blob, zipName)
+        FileSaver-->>User: 保存 zip 文件
+    end
+</div>
+<h4><strong>痛点：同步请求责任太重</strong></h4>
+<p>之前的实现是用「前端先预检文件树 + 后端统一打 ZIP」的方式，快速交付一个可用的多文件下载能力。</p>
+<p>多个小文件下载不会有问题，但是遇到总文件体量大的情况，就会出现跟大文件下载一样的内存问题。</p>
+<p>而且当前批量下载按照同步请求处理是核心问题，它把以下功能都堆在一次同步请求里了：</p>
+<ul>
+<li>目录展开</li>
+<li>资源校验</li>
+<li>文件拉取</li>
+<li>压缩打包</li>
+<li>响应输出</li>
+</ul>
+<p>批量文件下载<strong>本质上就是长耗时操作</strong>，把它的全流程塞进一个 HTTP 请求里，超时、内存峰值、失败恢复都很差，更适合按照异步任务设计执行。</p>
+<h4><strong>演进方案：同步改异步 + 临时对象存储 + Worker 承担下载</strong></h4>
+<p>本次改动不仅需要 OSS 服务的流式输出支持，还需要 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService</span></span></code></span> 支持将批量下载操作一并纳入任务体系。</p>
+<p>主要改动：</p>
+<ol>
+<li>任务模式：首先<strong>把「同步大请求」改成「异步任务」</strong>
+<ol>
+<li>用户体验由原来的「点击打包后等待结果；如果打包失败，则需要重新跑完整链路」</li>
+<li>改为：「已开始打包」「打包完成，可下载」「失败，可重试」「可重复下载」</li>
+</ol>
+</li>
+<li><strong>校验层面：让后端自己展开目录，不信前端传完整结构</strong></li>
+<li>打包工具：ZIP 打包器改为支持流式输出的 Archiver，避免内存峰值过高</li>
+<li><strong>下载结果存储：下载结果写到临时对象存储，而不是 API 直接回传</strong></li>
+</ol>
+<p>新流程可分为两个阶段：创建任务和后台执行。</p>
+<p><strong>创建任务</strong></p>
+<ol>
+<li>用户发起批量下载操作。</li>
+<li>BFF 层进行下载文件的参数校验和 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>hostKey-download</span></span></code></span> 权限校验。</li>
+<li>根据 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>rowKeys</span></span></code></span> 展开真实文件清单。</li>
+<li>服务端执行最终兜底校验，计算：
+<ul>
+<li>文件总数</li>
+<li>总大小</li>
+<li>每个文件真实路径</li>
+</ul>
+</li>
+<li>如果失败，返回结果。</li>
+<li>如果成功，则生成下载任务。</li>
+<li>将任务投递给后台 Worker。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    participant User as 用户
+    participant FE as 前端文件页
+    participant API as API 服务
+    participant Task as 任务系统
+    participant FT as fileTransferService
+
+    User->>FE: 选择文件/目录并点击 Batch Download
+    FE->>API: POST /api/file/createBatchDownloadTask
+    API->>API: 校验参数与 download 权限
+    API->>FT: 递归展开目录与获取真实文件清单
+    FT-->>API: 返回文件树和文件元信息
+    API->>API: 计算 fileCount / totalSize / 目录结构
+    alt 超出限制
+        API-->>FE: 返回校验失败
+    else 校验通过
+        API->>Task: 创建 TASK_TYPE_BATCH_DOWNLOAD
+        Task-->>API: 返回 taskId
+        API-->>FE: 返回 taskId
+    end
+</div>
+<p>后台 Worker 接手：</p>
+<ol>
+<li>主动轮询检查有无待执行的批量下载任务：<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.getWaitingTask</span></span></code></span>。</li>
+<li>领取任务，获取下载任务细节：为每个文件申请下载 token。
+<ol>
+<li>小文件优先走流式下载。</li>
+<li>大文件优先使用下游已有 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>streamDownload</span></span></code></span> 能力。</li>
+</ol>
+</li>
+<li>文件流直接 append 到 ZIP 流。</li>
+<li>ZIP 流直接写入 FOSS 的临时对象存储。</li>
+<li>打包完成后写回任务结果，更新任务状态。</li>
+<li>用户在 Task 界面下载生成好的 ZIP 包。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    participant Worker as 下载 Worker
+    participant FT as fileTransferService
+    participant FOSS as 对象存储/FOSS
+    participant Task as 任务系统
+    participant FE as 前端
+    participant Browser as 浏览器
+
+    Worker->>Task: 轮询领取 batch download 任务
+    Worker->>Worker: 初始化 zip 流和并发控制器
+    loop 遍历文件清单
+        Worker->>FT: 获取单文件下载 token
+        FT-->>Worker: token + fossKey + size
+        Worker->>FOSS: 以 streamDownload/流式方式拉取文件
+        FOSS-->>Worker: 文件流
+        Worker->>Worker: append 到 zip stream
+    end
+    Worker->>FOSS: 将 zip stream 写入临时存储
+    FOSS-->>Worker: 返回结果位置 zipFossKey
+    Worker->>Task: 更新任务为 SUCCESS，写入 downloadUrl / expiredAt
+
+    FE->>Task: 轮询任务状态
+    Task-->>FE: SUCCESS + downloadUrl
+    FE->>Browser: 触发下载
+    Browser->>FOSS: 请求最终 zip
+    FOSS-->>Browser: 返回 zip 文件流
+</div>
+<p>Worker 执行的 demo 代码如下：</p>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="javascript" data-theme="github-light github-dark"><code data-language="javascript" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">// worker/batchDownloadWorker.ts</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">import</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> archiver </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">from</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 'archiver'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">import</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> { PassThrough } </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">from</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 'node:stream'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">async</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> function</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0"> runWorker</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(</span><span style="--shiki-light:#E36209;--shiki-dark:#FFAB70">app</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">) {</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">  const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> opaque</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> `batch-worker-${</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">process</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">.</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">pid</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">}`</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">  const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> hostKey</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 'your-host-key'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">  // 1. 抢 host 级别锁，避免多个 worker 同时处理同一 hostKey 的任务</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">  await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">agentLock</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    hostKey,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    expiry: </span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">'10m'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    opaque,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  });</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">  try</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">    while</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> (</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">true</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">) {</span></span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">      // 2. 拉取待处理任务</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">      const</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> { </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">task</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> } </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">=</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">getWaitingTask</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({ hostKey });</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">      if</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> (</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">!</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">task?.taskId) {</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        await</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0"> sleep</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">3000</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">);</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        continue</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">;</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">      const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> taskId</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> task.taskId;</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">      try</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">        // 3. 标记任务开始</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">taskStart</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          reqId: </span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">genReqId</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(),</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          taskId,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          currentNode: </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">        });</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">        // 4. 查询任务详情</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> detail</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">getBatchDownloadTask</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({ taskId });</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">        // 5. 执行打包</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        const</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> result</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> =</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583"> await</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0"> buildZipAndUpload</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(app, detail);</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">        // 6. 上传结果到 foss</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        await</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> this</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">_uploadFile</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({ hostKey, path, result })</span></span>
+<span data-line=""> </span>
+<span data-line=""><span style="--shiki-light:#6A737D;--shiki-dark:#6A737D">        // 7. 标记任务成功</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">taskSuccess</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          reqId: </span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">genReqId</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(),</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          taskId,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          currentNode: </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">        });</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      } </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">catch</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> (</span><span style="--shiki-light:#E36209;--shiki-dark:#FFAB70">err</span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">:</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> any</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">) {</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">        await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">taskFailed</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          reqId: </span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">genReqId</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">(),</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          taskId,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          currentNode: </span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">1</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">          reason: err.message </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">||</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 'batch download failed'</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">,</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">        });</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">      }</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">    }</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  } </span><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">finally</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> {</span></span>
+<span data-line=""><span style="--shiki-light:#D73A49;--shiki-dark:#F97583">    await</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8"> app.fileTransferService.</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">agentUnlock</span><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">({ hostKey, opaque });</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">  }</span></span>
+<span data-line=""><span style="--shiki-light:#24292E;--shiki-dark:#E1E4E8">}</span></span></code></pre></figure>
+<h4><strong>收益</strong></h4>
+<ol>
+<li>将“用户发起批量下载”和“用户真正下载 ZIP 产物”这两个动作解耦，避免把目录展开、文件拉取、压缩打包、结果回传全部堆在一次 HTTP 请求里，显著缩短单次请求时间。</li>
+<li>将批量下载正式纳入任务体系后，任务状态可追踪、失败可重试，用户不需要因为一次打包失败就重新跑完整链路。</li>
+<li>ZIP 产物写入临时对象存储后，下载结果可以被重复获取，用户不必长时间停留在当前页面等待打包完成，整体体验更稳定。</li>
+<li>对服务端来说，原来集中在同步请求里的超时压力、内存峰值和失败恢复问题被拆散到异步 Worker 和对象存储链路中，系统更容易治理和扩展。</li>
+</ol>
+<h4><strong>更理想的演进方向</strong></h4>
+<p>当前的实现更多是站在 File Interaction 项目自身的角度来承接这项功能。虽然已经借助了下游服务的支持，但仍然可以更进一步。</p>
+<p>现在批量下载流程中的文件打包依旧挂在 BFF 体系里：前端 → BFF 创建任务，BFF 自己的 Worker 去拉文件、打 ZIP、传 FOSS。</p>
+<p>这样只是把同步请求改成异步任务，打包压力仍然属于 BFF 这一层。</p>
+<p>可是如果批量下载的打包与产物管理能力<strong>改成由下游的</strong> <strong><span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService</span></span></code></span></strong> <strong>服务实现</strong>，将复杂度转移，那么 BFF 可以只保留控制面职责，整体上对本项目会省力很多。</p>
+<p>尤其是 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService</span></span></code></span> 已经包含以下特征：</p>
+<ul>
+<li>它对接 Task 任务中心，已支持创建、上传、删除、同步等任务</li>
+<li>它天然知道文件位置和文件元数据</li>
+<li>以后不止这个 BFF 会用到批量下载能力，可以被其他文件后台系统使用</li>
+</ul>
+<p>真正合理的架构设计，一定不是只会往一个项目里堆复杂度，而是从整个系统层面出发，看怎样分配复杂度最合理。</p>
+<h3>上传</h3>
+<h4><strong>1.0 流程</strong></h4>
+<p>当时还没有围绕上传暂存区和异步分发建立完整的 Worker 执行链路，所以先沿用同步上传链路。</p>
+<ol>
+<li>用户点击 Upload 按钮，选择一个或多个文件。</li>
+<li>前端校验文件数量、扩展名和总大小。</li>
+<li>前端通过 multipart POST 到 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>/api/file/batchUpload</span></span></code></span>，同时提交 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>hostKey</span></span></code></span> 和 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>path</span></span></code></span>。</li>
+<li>服务端校验 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>write</span></span></code></span> 权限和参数。</li>
+<li>服务端读取每个临时文件，计算 SHA-1。</li>
+<li>服务端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.generateUploadFileTask</span></span></code></span> 创建上传任务，并拿到 FOSS key、<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>spaceId</span></span></code></span>、token。
+<ol>
+<li>若文件小于等于 50MB，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.simpleUpload</span></span></code></span>。</li>
+<li>若文件超过 50MB，则需要进行分块处理，调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.createMultipartUpload</span></span></code></span>、<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.uploadPart</span></span></code></span>、<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>foss.completeMultipartUpload</span></span></code></span>。</li>
+</ol>
+</li>
+<li>FOSS 上传完成后，服务端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.notifyUploadFile</span></span></code></span>，通知上游系统。</li>
+<li>前端提示上传任务创建成功，后续通过任务状态或列表刷新观察结果。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant Upload as UploadBtn.vue
+    participant API as FileController
+    participant FileSvc as fileTransferService
+    participant FOSS as foss
+
+    User->>Upload: 点击 Upload 并选择文件
+    Upload->>Upload: 校验文件数量不超过 10
+    Upload->>Upload: 校验扩展名白名单
+    Upload->>Upload: 校验总大小不超过 500MB
+    Upload->>API: POST /api/file/batchUpload&#x3C;br/>multipart files + hostKey + path
+
+    API->>API: 校验 write 权限
+    API->>API: 校验 multipart 参数
+
+    loop 每个上传文件
+        API->>API: 读取临时文件流
+        API->>API: 计算 SHA1 和文件大小
+        API->>FileSvc: generateUploadFileTask(reqId, location, sha1, size)
+        FileSvc-->>API: 返回 taskId、fossKey、spaceId、token
+
+        alt 文件大小 > 50MB
+            API->>FOSS: createMultipartUpload(spaceId,fossKey,partSize)
+            FOSS-->>API: 返回 uploadId
+            loop 每个 10MB 分片
+                API->>FOSS: uploadPart(uploadId,partNum,data)
+                FOSS-->>API: 返回 etag
+            end
+            API->>FOSS: completeMultipartUpload(uploadId,parts)
+            FOSS-->>API: 分块上传完成
+        else 文件大小不超过 50MB
+            API->>FOSS: simpleUpload(spaceId,fossKey,data,token)
+            FOSS-->>API: 上传完成
+        end
+
+        API->>FileSvc: notifyUploadFile(reqId, taskId)
+        FileSvc-->>API: 确认通知
+    end
+
+    API-->>Upload: 返回 taskIdList
+    Upload-->>User: 提示上传任务创建成功
+</div>
+<h4><strong>痛点：请求链路过长，内存容易占用过高</strong></h4>
+<p>1.0 上传操作的实现问题跟批量下载类似：</p>
+<ul>
+<li>一次请求链路过长：
+<ul>
+<li>前端通过 multipart 把文件传给 BFF。</li>
+<li>BFF 读取临时文件流，并把内容不断 Buffer.concat 到 content。</li>
+<li>BFF 再把整块 content 上传到 FOSS。</li>
+<li>上传成功后调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>notifyUploadFile</span></span></code></span>。</li>
+</ul>
+</li>
+<li>内存容易占用过高：整块文件上传时都会被聚合到内存中，多个大文件同时上传内存占用率极高，很容易造成服务瘫痪。</li>
+</ul>
+<h4><strong>演进方案：同步改异步 + 引入暂存区 + Worker 承担上传任务</strong></h4>
+<p>重新设计时需要引入文件<strong>暂存区：也就是前端上传到 BFF 层后，BFF 不直接上传给 FOSS 文件存储服务，而是先存在服务器的暂存区上，后续由 Worker 分发</strong>。</p>
+<p>把上传链路拆成三段：</p>
+<ol>
+<li><strong>Init</strong>
+前端先声明本次上传的元信息，服务端完成权限和规则校验，创建 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadBatchId</span></span></code></span> 与 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadFileId</span></span></code></span>。</li>
+<li><strong>Stage</strong>
+前端把文件上传到 BFF 的 staging 接口，BFF 以流式方式写入共享暂存区，并在写入过程中计算 SHA-1、统计大小。</li>
+<li><strong>Transfer</strong>
+staging 完成后，服务端创建正式上传任务，并由异步 Worker 从暂存区流式上传到 FOSS，最后调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>notifyUploadFile</span></span></code></span>。</li>
+</ol>
+<p>新流程可以分为两个阶段：</p>
+<p><strong>第一阶段：上传到暂存区</strong></p>
+<ol>
+<li>用户在前端点击 Upload，选择文件。</li>
+<li>前端先做一轮轻量校验，例如文件数量、扩展名。</li>
+<li>前端调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>POST /api/file/upload/init</span></span></code></span>，服务端校验上传权限、文件数量、扩展名和总大小，并返回 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadBatchId</span></span></code></span> 和每个文件对应的 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadFileId</span></span></code></span>。</li>
+<li>前端按文件逐个调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>POST /api/file/upload/stage</span></span></code></span>。</li>
+<li>BFF 先校验 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadFileId</span></span></code></span> 当前状态，然后将文件流式写入 staging 暂存区，并在写入过程中同步计算 SHA-1 和实际大小。</li>
+<li>staging 完成后，BFF 调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>fileTransferService.generateUploadFileTask(location, sha1, size)</span></span></code></span> 创建正式上传任务，拿到 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>taskId</span></span></code></span> 等信息。</li>
+<li>BFF 投递异步 Worker 任务，并把 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>taskId</span></span></code></span> 返回给前端。</li>
+</ol>
+<p><strong>第二阶段：后台异步上传到正式存储</strong></p>
+<ol>
+<li>Node Worker 在后台从 staging 区读取文件流。</li>
+<li>小文件直接走 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>StreamUpload</span></span></code></span> 或 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>simpleUpload(stream)</span></span></code></span>。</li>
+<li>大文件走 multipart 分片上传：先创建 multipart upload，再并发上传各个分片，最后调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>completeMultipartUpload</span></span></code></span>。</li>
+<li>正式上传完成后，Worker 调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>notifyUploadFile(taskId)</span></span></code></span> 通知上游。</li>
+<li>通知成功后，再删除 staging 暂存对象。</li>
+</ol>
+<div class="mermaid-diagram not-prose" data-mermaid="true" aria-label="Mermaid diagram">sequenceDiagram
+    autonumber
+    actor User as 用户
+    participant FE as 前端 Upload
+    participant API as BFF API
+    participant Stage as Staging Storage
+    participant Worker as Upload Worker
+    participant FileSvc as fileTransferService
+    participant FOSS as FOSS
+
+    User->>FE: 选择文件并点击上传
+    FE->>FE: 本地轻量校验
+    FE->>API: POST /api/file/upload/init
+    API->>API: 校验权限、数量、扩展名、总大小
+    API-->>FE: 返回 uploadBatchId + uploadFileId 列表
+
+    loop 每个文件
+        FE->>API: POST /api/file/upload/stage
+        API->>API: 校验 uploadFileId 状态
+        API->>Stage: 流式写入暂存区
+        API->>API: 流式计算 SHA1 / actualSize
+        Stage-->>API: staging 完成
+        API->>FileSvc: generateUploadFileTask(location, sha1, size)
+        FileSvc-->>API: 返回 taskId + fossKey + credential
+        API->>Worker: 投递 UploadStagedFile 任务
+        API-->>FE: 返回 taskId
+    end
+
+    par 后台异步执行
+        Worker->>Stage: 读取 staging 文件流
+        alt 文件较小
+            Worker->>FOSS: StreamUpload 或 simpleUpload(stream)
+        else 文件较大
+            Worker->>FOSS: createMultipartUpload
+            loop 有限并发分片上传
+                Worker->>FOSS: uploadPart(partNum, chunkStream)
+                FOSS-->>Worker: etag
+            end
+            Worker->>FOSS: completeMultipartUpload
+        end
+        Worker->>FileSvc: notifyUploadFile(taskId)
+        FileSvc-->>Worker: 通知成功
+        Worker->>Stage: 删除暂存对象
+    and 前端轮询
+        FE->>API: 查询 uploadBatch/task 状态
+        API-->>FE: 返回状态与错误信息
+    end
+</div>
+<h4><strong>收益</strong></h4>
+<p><strong>这个方案的关键价值在于：</strong></p>
+<ul>
+<li>浏览器到 BFF 的请求完成后就可以返回，<strong>不再阻塞后续 FOSS 上传</strong>。</li>
+<li>BFF 不需要把整个文件读进内存，<strong>减少内存负担</strong>。</li>
+<li>上传状态被拆成明确步骤，可以针对具体步骤重试。</li>
+<li>暂存区让<strong>异步 Worker 可以跨请求继续执行</strong>，不依赖单个 HTTP 请求生命周期。</li>
+<li>和现有任务页、任务状态体系更容易对齐。</li>
+</ul>
+<h4><strong>扩展思考：为什么大文件上传还是用分片不用流</strong></h4>
+<p>即便下游的文件存储服务支持流式上传，大文件还是<strong>优先用分块上传</strong>。</p>
+<ol>
+<li>流式上传作为单个请求，一旦失败，通常要从头再来。分片上传只需要重传失败的那几个 part。</li>
+<li>长连接更脆弱：大文件意味着一个请求持续很久，更容易碰到网络抖动、代理超时、连接重置。分片后，每个请求更短，更容易成功。</li>
+<li>分块请求是可管理的，更适合断点恢复。Multipart 通常有 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadId</span></span></code></span> + <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>etag</span></span></code></span> 机制。</li>
+<li>Worker 重试时可以复用已完成分片，不必重传全部；并且可以并发，提高吞吐。单流上传本质上是一条通道慢慢送，分片上传可以多个 part 并发跑，更容易把带宽吃满。</li>
+</ol>
+<p>反过来，大文件的下载却优先用流式，这是二者的目的和架构决定的。</p>
+<p>大文件下载当然也包含同样的问题：单次请求时间长、长连接脆弱、失败重试成本高。</p>
+<p>那为啥不用并发呢？</p>
+<p>因为<strong>上传分块的收益更明显，而下载分块的代价更重</strong>。</p>
+<ol>
+<li>上传分片在当前项目中已有明确支持，下载分块没有同等强的闭环。</li>
+</ol>
+<p>上传到 OSS 服务时，multipart 是存储系统原生支持的协议：</p>
+<ul>
+<li>先拿到 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>uploadId</span></span></code></span></li>
+<li>每个 part 独立上传</li>
+<li>成功的 part 被存储系统记住</li>
+<li>最后调用 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>completeMultipartUpload</span></span></code></span> 收尾</li>
+</ul>
+<p>下游的存储服务已经预先帮我们完成了分块逻辑的实现。</p>
+<p>对比下下载是把一个连续的字节流交给用户，如果要拆成多个文件块并发，那么：</p>
+<ul>
+<li>分块的顺序</li>
+<li>如何拼装分块</li>
+<li>拼装时写哪里</li>
+<li>浏览器能不能准确接收</li>
+</ul>
+<p>全部都是要自己管理的问题，而且下载侧也没有 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>completeMultipartUpload</span></span></code></span> 这样的收尾接口。</p>
+<ol>
+<li>上传的重点是「落盘」，下载重点是「交付」</li>
+</ol>
+<p>上传的核心在于稳定地写进 OSS 服务，所以分块传输更加稳定可靠，即便要多耗时间也是可以接受的。</p>
+<p>但是对于文件下载，我们的目标应当是把文件尽快送到用户手里，这个场景最自然的交付模型就是连续流：</p>
+<ul>
+<li>上游读一点，BFF 发一点，浏览器收一点。</li>
+</ul>
+<p>总结说下载分块不是不能做，只是对比流下载，它的复杂度更容易超过收益。</p>
+<p><strong>总结</strong></p>
+<p>大文件上传和下载虽然都面临长连接、失败重试成本高的问题，但默认取舍不同。</p>
+<p>上传侧的 multipart 是对象存储原生支持的可靠协议，天然具备分片持久化、局部重试和最终合并能力；</p>
+<p>而下载侧的目标是把连续字节流交付给用户，流式透传已经是最自然的实现。</p>
+<ul>
+<li>下载分块通常要额外解决 Range 调度、分段重试、顺序拼装和客户端承接能力，因此只有在断点续传、并发加速或按区间读取等场景下，才会引入分块下载。</li>
+<li>所以默认的大文件下载仍然优先流式。</li>
+</ul>
+<h2>工程化思考</h2>
+<h3>BFF 层做安全兜底</h3>
+<p>把太多校验责任放在前端，是前端同学刚开始接手全栈开发时常见的误区。要意识到用户是可以绕过前端页面直接发请求的，所以前端的校验更多是为了用户体验，在不合法请求发出前就尽早拦截并提醒用户。</p>
+<p>而且 BFF 中转不只是校验安全兜底，比如从文件下载角度出发，下载链路除了「把文件发给浏览器」，还要统一处理：</p>
+<ul>
+<li><strong>权限校验</strong></li>
+<li><strong>下载审计</strong></li>
+<li><strong>下游协议适配</strong></li>
+<li><strong>浏览器侧响应头控制</strong></li>
+</ul>
+<h3>参数调优</h3>
+<p>在历史方案中，下载分块涉及几个关键经验参数，例如 50MB 的大小文件分界线、10MB 的分块大小，以及 <span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>MAX_PART_CONCURRENCY</span></span></code></span> 并发数。这些都是实际开发中的经验值。</p>
+<p>在项目上线后，应当结合日志进行动态调整，保证当前项目功能运行在最佳状态。</p>
+<ol>
+<li>
+<p>首先这些参数应该设置成可以被灰度发布的环境变量参数。</p>
+</li>
+<li>
+<p>接着，如何结合日志动态调整参数：</p>
+<ol>
+<li>文件区间边缘的下载失败数：如果 50MB 以下常常超时，那就需要下调；如果 50MB 以上稳定，反而因为分块延长了下载时间，那就需要上调。</li>
+<li>分块请求是否经常超时：如果经常超时，那就需要下调分块大小；反过来，分块请求稳定，但常常请求过多导致 CPU 过载，那就调大分块。</li>
+<li>并发数：
+<ul>
+<li>如果错误集中出现在并发波次，<strong>服务端内存峰值高</strong>，同时有<strong>多个用户下载大文件</strong>时服务器扛不住，那就下调。</li>
+<li>如果总耗时瓶颈在「下载串行波次多」，那就上调。</li>
+</ul>
+</li>
+</ol>
+</li>
+<li>
+<p>具体操作：一次只改一个参数，这样才能确定是哪个参数的调整实际起效了。</p>
+</li>
+<li>
+<p>如何验收：</p>
+<p>调参前先选定一个主要观察指标，例如下载成功率、P95 耗时或服务端内存峰值，避免多个目标同时变化导致结论不清晰。如果调整后能够明显观察到对应指标的变动，比如：</p>
+<ul>
+<li>成功率提升</li>
+<li>平均耗时 / P95 下降</li>
+<li>服务端内存峰值下降</li>
+<li>超时 / 重试次数减少
+那就可以肯定本次调整有效。</li>
+</ul>
+</li>
+</ol>
+<h3>从同步请求到异步任务</h3>
+<p>对于文件下载、文件上传这类操作，单次请求完成当然最直接；但当文件体量上升后，请求耗时变长、失败重试成本变高，就需要考虑从同步请求切换到异步任务。</p>
+<p>判断一个操作是否适合升级为异步任务，通常可以看三个条件：</p>
+<ol>
+<li>是否是长链路、长耗时操作。<br>
+例如批量下载包含目录展开、文件拉取、压缩打包和结果回传，不适合全部堆在一次 HTTP 请求里。</li>
+<li>失败后是否重试成本高。<br>
+如果一次失败就要重新上传整文件、重新打整包，用户体验和系统成本都会很差。</li>
+<li>是否可以拆成「发起请求」和「拿到最终结果」两个阶段。<br>
+比如下载场景中，用户点击批量下载，和最终拿到生成产物可以解耦；上传场景中，用户把文件提交到系统，和最终通知上游文件可用也可以解耦。</li>
+</ol>
+<p>这类任务化设计的价值，不只是降低单次请求压力，更重要的是让状态可观测、失败可重试、执行链路可恢复。</p>
+<h2>总结</h2>
+<p>本文对富途的文件中台项目的架构、核心功能实现以及演进方向进行了详细复盘。重点不在于某个接口如何写，而是在文件中台场景下，开发者如何结合项目背景，根据文件大小、失败成本、下游能力和链路长度，在同步请求、流式传输、分片上传、异步任务之间做取舍。</p></div></article></main></div><!--$--><!--/$--><script src="/_next/static/chunks/e15aa42f6ef0f66c.js" id="_R_" async=""></script><script>(self.__next_f=self.__next_f||[]).push([0])</script><script>self.__next_f.push([1,"1:\"$Sreact.fragment\"\n2:I[63433,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"default\"]\n3:I[2006,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"default\"]\n5:I[9871,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"OutletBoundary\"]\n6:\"$Sreact.suspense\"\n8:I[9871,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"ViewportBoundary\"]\na:I[9871,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"MetadataBoundary\"]\nc:I[48045,[],\"default\"]\n:HL[\"/_next/static/chunks/78328e927a0bfa2f.css\",\"style\"]\n:HL[\"/_next/static/media/797e433ab948586e-s.p.29207c2f.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n:HL[\"/_next/static/media/caa3a2e1cccd8315-s.p.3b6cae6d.woff2\",\"font\",{\"crossOrigin\":\"\",\"type\":\"font/woff2\"}]\n"])</script><script>self.__next_f.push([1,"0:{\"P\":null,\"b\":\"J8DoQpK4-OGcGKh5Gk7eZ\",\"c\":[\"\",\"blog\",\"file-interaction-review\"],\"q\":\"\",\"i\":false,\"f\":[[[\"\",{\"children\":[\"blog\",{\"children\":[[\"slug\",\"file-interaction-review\",\"d\"],{\"children\":[\"__PAGE__\",{}]}]}]},\"$undefined\",\"$undefined\",true],[[\"$\",\"$1\",\"c\",{\"children\":[[[\"$\",\"link\",\"0\",{\"rel\":\"stylesheet\",\"href\":\"/_next/static/chunks/78328e927a0bfa2f.css\",\"precedence\":\"next\",\"crossOrigin\":\"$undefined\",\"nonce\":\"$undefined\"}]],[\"$\",\"html\",null,{\"lang\":\"en\",\"children\":[\"$\",\"body\",null,{\"className\":\"geist_a71539c9-module__T19VSG__variable geist_mono_8d43a2aa-module__8Li5zG__variable antialiased\",\"children\":[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":[[[\"$\",\"title\",null,{\"children\":\"404: This page could not be found.\"}],[\"$\",\"div\",null,{\"style\":{\"fontFamily\":\"system-ui,\\\"Segoe UI\\\",Roboto,Helvetica,Arial,sans-serif,\\\"Apple Color Emoji\\\",\\\"Segoe UI Emoji\\\"\",\"height\":\"100vh\",\"textAlign\":\"center\",\"display\":\"flex\",\"flexDirection\":\"column\",\"alignItems\":\"center\",\"justifyContent\":\"center\"},\"children\":[\"$\",\"div\",null,{\"children\":[[\"$\",\"style\",null,{\"dangerouslySetInnerHTML\":{\"__html\":\"body{color:#000;background:#fff;margin:0}.next-error-h1{border-right:1px solid rgba(0,0,0,.3)}@media (prefers-color-scheme:dark){body{color:#fff;background:#000}.next-error-h1{border-right:1px solid rgba(255,255,255,.3)}}\"}}],[\"$\",\"h1\",null,{\"className\":\"next-error-h1\",\"style\":{\"display\":\"inline-block\",\"margin\":\"0 20px 0 0\",\"padding\":\"0 23px 0 0\",\"fontSize\":24,\"fontWeight\":500,\"verticalAlign\":\"top\",\"lineHeight\":\"49px\"},\"children\":404}],[\"$\",\"div\",null,{\"style\":{\"display\":\"inline-block\"},\"children\":[\"$\",\"h2\",null,{\"style\":{\"fontSize\":14,\"fontWeight\":400,\"lineHeight\":\"49px\",\"margin\":0},\"children\":\"This page could not be found.\"}]}]]}]}]],[]],\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]}]}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[null,[\"$\",\"$L2\",null,{\"parallelRouterKey\":\"children\",\"error\":\"$undefined\",\"errorStyles\":\"$undefined\",\"errorScripts\":\"$undefined\",\"template\":[\"$\",\"$L3\",null,{}],\"templateStyles\":\"$undefined\",\"templateScripts\":\"$undefined\",\"notFound\":\"$undefined\",\"forbidden\":\"$undefined\",\"unauthorized\":\"$undefined\"}]]}],{\"children\":[[\"$\",\"$1\",\"c\",{\"children\":[\"$L4\",[[\"$\",\"script\",\"script-0\",{\"src\":\"/_next/static/chunks/cbd29fc56957d6dd.js\",\"async\":true,\"nonce\":\"$undefined\"}]],[\"$\",\"$L5\",null,{\"children\":[\"$\",\"$6\",null,{\"name\":\"Next.MetadataOutlet\",\"children\":\"$@7\"}]}]]}],{},null,false,false]},null,false,false]},null,false,false]},null,false,false],[\"$\",\"$1\",\"h\",{\"children\":[null,[\"$\",\"$L8\",null,{\"children\":\"$L9\"}],[\"$\",\"div\",null,{\"hidden\":true,\"children\":[\"$\",\"$La\",null,{\"children\":[\"$\",\"$6\",null,{\"name\":\"Next.Metadata\",\"children\":\"$Lb\"}]}]}],[\"$\",\"meta\",null,{\"name\":\"next-size-adjust\",\"content\":\"\"}]]}],false]],\"m\":\"$undefined\",\"G\":[\"$c\",[]],\"S\":true}\n"])</script><script>self.__next_f.push([1,"9:[[\"$\",\"meta\",\"0\",{\"charSet\":\"utf-8\"}],[\"$\",\"meta\",\"1\",{\"name\":\"viewport\",\"content\":\"width=device-width, initial-scale=1\"}]]\n"])</script><script>self.__next_f.push([1,"d:I[78622,[\"/_next/static/chunks/cbd29fc56957d6dd.js\"],\"\"]\ne:I[53220,[\"/_next/static/chunks/cbd29fc56957d6dd.js\"],\"default\"]\n10:I[75511,[\"/_next/static/chunks/e3e74710d54a4448.js\",\"/_next/static/chunks/ff0e1f204386c9a8.js\"],\"IconMark\"]\nf:Tf3c1,"])</script><script>self.__next_f.push([1,"\u003ch2\u003e业务背景\u003c/h2\u003e\n\u003cp\u003e富途的业务同事需要从多个上游券商获取文件，但是不同上游各自有各自的中台系统，比较分散，缺少一个统一的文件管理中台\u003c/p\u003e\n\u003ch2\u003e文章定位\u003c/h2\u003e\n\u003cp\u003e本文重点在于复盘文件中台场景下的几个关键架构决策，而不是一一列举介绍项目的所有功能。考虑到这是一个 3 年前的旧项目，很多实现要受当时下游能力和交付节奏限制。文中的后续优化，部分是已落地演进，部分是复盘后的理想方向。\u003c/p\u003e\n\u003ch2\u003e技术栈\u003c/h2\u003e\n\u003cp\u003e项目选用当时普遍的 Vue 3 + Ant Design Vue、Egg.js、TypeScript、Protobuf.js，这也是富途内部最常用的后台技术栈\u003c/p\u003e\n\u003cp\u003e这个项目不是传统的前端 CRUD，而是 BFF 编排层，核心在于基于 Egg.js 的 BFF 层逻辑，通过 Protobuf.js 对接 3 个下游服务：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eFOSS\u003c/strong\u003e: 文件管理，上传，下载，分块传输\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003efileTransferService\u003c/strong\u003e：负责业务文件能力，对接文件上传，刷新，文件夹创建任务\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003euFTConsoleService\u003c/strong\u003e：任务管理，查询，重试，停止，查询任务日志\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e对比传统的 REST API，Protobuf 有以下优势：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eProtobuf 文件提前定义好：服务名、方法名、请求结构、返回结构，不会出现接口文档跟实际调用不一致的情况\u003c/li\u003e\n\u003cli\u003eProtobuf 不传 JSON 文本，请求和响应都是按 Protobuf 的二进制协议编码，体积小，解析成本低，传输速度快\u003c/li\u003e\n\u003cli\u003e采用 gRPC 传输，底层是 HTTP/2，可以实现多路传输，速度更快\u003c/li\u003e\n\u003cli\u003e对于文件中台管理项目，Protobuf 协议在传输文件的时候以 bytes 直接进行二进制内容传输，而 REST + JSON 还需要对文件转换成 Base64 字符串\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003eBFF 可以直接调用 Protobuf 文件自动生成的服务，通过 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ectx.service.xxx\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 类似的格式进行调用\u003c/p\u003e\n\u003cfigure data-rehype-pretty-code-figure=\"\"\u003e\u003cpre tabindex=\"0\" data-language=\"javascript\" data-theme=\"github-light github-dark\"\u003e\u003ccode data-language=\"javascript\" data-theme=\"github-light github-dark\" style=\"display: grid;\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003eawait\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e ctx.service.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003enotifyUploadFile\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  reqId: ctx.helper.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003erequestId\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(),\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  taskId,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e});\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003econst\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e completeUploadRes\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e ctx.service.foss.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003ecompleteMultipartUpload\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      uploadId,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      parts: uploadResList,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    },\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    fossOption\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  );\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e\u003c/figure\u003e\n\u003ch2\u003e整体架构设计\u003c/h2\u003e\n\u003ch3\u003eUI 层\u003c/h3\u003e\n\u003cp\u003eFile 页面，负责展示不同上游的文件，并提供对应操作\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e横向 Tab 展示上游列表，点击切换上游，同时切换下方的文件列表\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e文件列表\u003c/strong\u003e作为核心模块，分行展示文件和文件夹，包含以下元数据：文件名、大小、文件地址，右侧操作列支持：下载、删除、查看文件历史操作\u003c/li\u003e\n\u003cli\u003e筛选支持全局筛选和本地筛选，以及按文件状态筛选\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e\u003cimg src=\"/img/file-0813/file-demo.jpeg\" alt=\"File 页面\"\u003e\u003c/p\u003e\n\u003cp\u003eTask 页面，用于文件删除、创建、同步等任务的状态管理\u003c/p\u003e\n\u003cp\u003e\u003cimg src=\"/img/file-0813/task-demo.jpeg\" alt=\"Task 页面\"\u003e\u003c/p\u003e\n\u003ch3\u003e单文件下载\u003c/h3\u003e\n\u003ch4\u003e\u003cstrong\u003e1.0 流程\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e当时下游 FOSS 服务还没有成熟的流式下载能力，BFF 只能先承担下载拼接职责。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户点击文件行的 Download。\u003c/li\u003e\n\u003cli\u003e前端打开下载 URL：\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003e/api/file/downloadFile?hostKey=...\u0026#x26;path=...\u0026#x26;name=...\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e服务端根据上游 hostKey 校验 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003edownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 权限。\u003c/li\u003e\n\u003cli\u003e服务端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.getDownloadToken\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 获取 FOSS 下载凭证。\n\u003col\u003e\n\u003cli\u003e若文件小于等于 50MB，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.simpleDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e若文件超过 50MB，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.createMultipartDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 后分片下载，并做 MD5 校验。\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003e服务端设置下载响应头，把文件数据返回浏览器。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cfigure data-rehype-pretty-code-figure=\"\"\u003e\u003cpre tabindex=\"0\" data-language=\"javascript\" data-theme=\"github-light github-dark\"\u003e\u003ccode data-language=\"javascript\" data-theme=\"github-light github-dark\" style=\"display: grid;\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003ectx.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003eset\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e  'Content-Length'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e: data.\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003elength\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e +\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e ''\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e  'Content-Type'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e: \u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e'application/force-download'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e  'Content-Disposition'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e: \u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e`attachment; filename=${\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003eencodeURIComponent\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e(\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003equery\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e.\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003ename\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e)\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e}`\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e  'Cache-Control'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e: \u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e'no-cache'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e});\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e\u003c/figure\u003e\n\u003cp\u003e同时支持文件的历史版本下载，在这个流程中（获取 downloadToken）时额外传入 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ehash\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 和 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003emodTime\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e，由下载 token 请求中的 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileHistory\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 指定目标版本。\u003c/p\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    autonumber\n    actor User as 用户\n    participant FileTable as FileTable.vue\n    participant Browser as 浏览器\n    participant API as FileController\n    participant FileSvc as fileTransferService\n    participant FOSS as foss\n\n    User-\u003e\u003eFileTable: 点击文件 Download\n    FileTable-\u003e\u003eBrowser: window.open(downloadFile URL)\n    Browser-\u003e\u003eAPI: GET /api/file/downloadFile\u0026#x3C;br/\u003ehostKey + path + name + 可选 hash/modTime\n\n    API-\u003e\u003eAPI: 校验 download 权限和参数\n    API-\u003e\u003eFileSvc: getDownloadToken(location, 可选 fileHistory)\n    FileSvc--\u003e\u003eAPI: 返回 fossSpaceId、token、size、fossKey\n\n    alt 文件大小 \u003e 50MB\n        API-\u003e\u003eFOSS: createMultipartDownload(spaceId,fossKey)\n        FOSS--\u003e\u003eAPI: 返回 downloadId、md5、size\n        loop 按 10MB 分片，最多 5 并发分组\n            API-\u003e\u003eFOSS: downloadPart(downloadId,partNum,partSize)\n            FOSS--\u003e\u003eAPI: 返回分片 data\n        end\n        API-\u003e\u003eAPI: Buffer.concat 分片并校验 MD5\n    else 文件大小不超过 50MB\n        API-\u003e\u003eFOSS: simpleDownload(spaceId,fossKey,token)\n        FOSS--\u003e\u003eAPI: 返回文件数据\n    end\n\n    API-\u003e\u003eAPI: 设置 Content-Disposition 等下载响应头\n    API--\u003e\u003eBrowser: 返回文件数据\n    Browser--\u003e\u003eUser: 浏览器下载文件\n\u003c/div\u003e\n\u003ch4\u003e\u003cstrong\u003e痛点：BFF 层吃进整块文件内存\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e对于小文件下载，这个流程没有什么问题，但是大文件下载的话当前请求会把所有分片都放在内存里，\u003cstrong\u003e然后 Buffer.concat 合并成完整文件\u003c/strong\u003e。\u003c/p\u003e\n\u003cp\u003e如果一个文件 500MB，同时 5 个用户下载，服务端内存压力会很明显。\u003c/p\u003e\n\u003ch4\u003e\u003cstrong\u003e演进方案：小文件直下，大文件流下载\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e下游文件存储服务 FOSS 后续开始支持流下载传输，对于大文件可以不再处理分块拼接，而是直接用流传输的方式，通过一个请求完成下载。\u003c/p\u003e\n\u003cp\u003e设计后的新流程如下：对比原流程，UI 层和 BFF 层鉴权逻辑不改，大小文件处理逻辑改为：小文件直下，大文件流式处理。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户在 UI 层点击下载链接触发下载请求，BFF 层校验 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003edownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 权限。\u003c/li\u003e\n\u003cli\u003e服务端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.getDownloadToken\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 获取 FOSS 下载凭证。\n\u003col\u003e\n\u003cli\u003e若文件小于等于 50MB，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.simpleDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e若文件超过 50MB，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.streamDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 返回流数据。\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003e服务端设置下载响应头，把文件数据返回浏览器。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    autonumber\n    actor User as 用户\n    participant FileTable as FileTable.vue\n    participant Browser as 浏览器\n    participant API as FileController\n    participant FileSvc as fileTransferService\n    participant FOSS as foss\n\n    User-\u003e\u003eFileTable: 点击文件 Download\n    FileTable-\u003e\u003eBrowser: window.open(downloadFile URL)\n    Browser-\u003e\u003eAPI: GET /api/file/downloadFile\u0026#x3C;br/\u003ehostKey + path + name + 可选 hash/modTime\n\n    API-\u003e\u003eAPI: 校验 download 权限和参数\n    API-\u003e\u003eFileSvc: getDownloadToken(location, 可选 fileHistory)\n    FileSvc--\u003e\u003eAPI: 返回 fossSpaceId、token、size、fossKey\n    API-\u003e\u003eAPI: 设置 Content-Disposition 等下载响应头\n\n    alt 文件大小 \u003e 50MB\n        API-\u003e\u003eFOSS: streamDownload(spaceId,fossKey,token)\n        FOSS--\u003e\u003eAPI: 返回文件流\n        API-\u003e\u003eBrowser: 透传文件流\n    else 文件大小不超过 50MB\n        API-\u003e\u003eFOSS: simpleDownload(spaceId,fossKey,token)\n        FOSS--\u003e\u003eAPI: 返回文件数据\n        API--\u003e\u003eBrowser: 返回文件数据\n    end\n\n    Browser--\u003e\u003eUser: 浏览器下载文件\n\u003c/div\u003e\n\u003cfigure data-rehype-pretty-code-figure=\"\"\u003e\u003cpre tabindex=\"0\" data-language=\"javascript\" data-theme=\"github-light github-dark\"\u003e\u003ccode data-language=\"javascript\" data-theme=\"github-light github-dark\" style=\"display: grid;\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003econst\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e stream\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e ctx.service.foss.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003estreamDownload\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  { spaceId: fossSpaceId, filename: fossKey },\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    timeout: \u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003eFOSS_TIMEOUT\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    srpcHeaders: {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      customizedHeader: { \u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e'X-Foss-Token'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e: token },\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    },\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  }\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e);\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003ectx.body \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e=\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e stream;\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e\u003c/figure\u003e\n\u003ch4\u003e\u003cstrong\u003e收益\u003c/strong\u003e\u003c/h4\u003e\n\u003col\u003e\n\u003cli\u003e减少并发请求数，单个大文件现在同样是单个请求。\u003c/li\u003e\n\u003cli\u003e减少了需要设计分块请求并发的系统复杂度。\u003c/li\u003e\n\u003cli\u003e减少服务器的内存压力，现在文件不会分块下载好后再拼起来堆到内存中，而是按照流格式输出到前端。\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003e批量文件下载\u003c/h3\u003e\n\u003cp\u003e包含多文件下载和文件夹下载。\u003c/p\u003e\n\u003ch4\u003e\u003cstrong\u003e1.0 流程\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e第一版目标是先快速交付可用能力，因此优先采用同步打包方案。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户勾选多个文件/文件夹，或点击目录下载。\u003c/li\u003e\n\u003cli\u003e前端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003e/api/file/getFolderInfo\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e，提交当前 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efolderPath\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e、\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ehostKey\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 和选中项。\u003c/li\u003e\n\u003cli\u003e服务端递归读取目录内容，统计文件数量和总大小。\u003c/li\u003e\n\u003cli\u003e若超过 10 个文件或 500MB，服务端直接报错。\u003c/li\u003e\n\u003cli\u003e前端把服务端返回的树形目录信息扁平化为 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efolderList\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e前端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003e/api/file/batchDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e服务端对每个文件申请下载 token 并从 FOSS 拉取内容。\u003c/li\u003e\n\u003cli\u003e服务端用 JSZip 生成 ZIP。\u003c/li\u003e\n\u003cli\u003e前端把返回的 Buffer 转成 Blob，并用 FileSaver 保存。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    autonumber\n    actor User as 用户\n    participant FileTable as FileTable.vue\n    participant API as FileController\n    participant FileSvc as fileTransferService\n    participant FOSS as foss\n    participant JSZip as JSZip\n    participant FileSaver as FileSaver\n\n    User-\u003e\u003eFileTable: 勾选文件或点击目录下载\n    FileTable-\u003e\u003eAPI: POST /api/file/getFolderInfo\u0026#x3C;br/\u003ehostKey + folderPath + rowKeys\n    API-\u003e\u003eAPI: 校验 view 权限和参数\n    API-\u003e\u003eAPI: 统计当前层文件数量和大小\n\n    loop 递归处理子目录\n        API-\u003e\u003eFileSvc: readDir(hostKey, childPath)\n        FileSvc--\u003e\u003eAPI: 返回子目录文件列表\n        API-\u003e\u003eAPI: 累加 folderSize 和 fileCount\n    end\n\n    alt fileCount \u003e 10 或 folderSize \u003e 500MB\n        API--\u003e\u003eFileTable: 返回下载限制错误\n        FileTable--\u003e\u003eUser: 展示错误提示\n    else 未超过限制\n        API--\u003e\u003eFileTable: 返回 FolderInfo 树\n        FileTable-\u003e\u003eFileTable: flattenFolderInfo(folderInfo)\n        FileTable-\u003e\u003eAPI: POST /api/file/batchDownload\u0026#x3C;br/\u003efolderList + hostKey\n        API-\u003e\u003eAPI: 校验 download 权限\n        API-\u003e\u003eJSZip: 创建 zip 对象\n\n        loop folderList 中每个文件\n            API-\u003e\u003eFileSvc: getDownloadToken(location)\n            FileSvc--\u003e\u003eAPI: 返回 FOSS 下载凭证\n            API-\u003e\u003eFOSS: simpleDownload 或 multipartDownload\n            FOSS--\u003e\u003eAPI: 返回文件 data\n            API-\u003e\u003eJSZip: zip.file(zipFileName,data)\n        end\n\n        API-\u003e\u003eJSZip: generateAsync(nodebuffer)\n        JSZip--\u003e\u003eAPI: 返回 zip Buffer\n        API--\u003e\u003eFileTable: 返回 zip 数据\n        FileTable-\u003e\u003eFileSaver: saveAs(blob, zipName)\n        FileSaver--\u003e\u003eUser: 保存 zip 文件\n    end\n\u003c/div\u003e\n\u003ch4\u003e\u003cstrong\u003e痛点：同步请求责任太重\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e之前的实现是用「前端先预检文件树 + 后端统一打 ZIP」的方式，快速交付一个可用的多文件下载能力。\u003c/p\u003e\n\u003cp\u003e多个小文件下载不会有问题，但是遇到总文件体量大的情况，就会出现跟大文件下载一样的内存问题。\u003c/p\u003e\n\u003cp\u003e而且当前批量下载按照同步请求处理是核心问题，它把以下功能都堆在一次同步请求里了：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e目录展开\u003c/li\u003e\n\u003cli\u003e资源校验\u003c/li\u003e\n\u003cli\u003e文件拉取\u003c/li\u003e\n\u003cli\u003e压缩打包\u003c/li\u003e\n\u003cli\u003e响应输出\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e批量文件下载\u003cstrong\u003e本质上就是长耗时操作\u003c/strong\u003e，把它的全流程塞进一个 HTTP 请求里，超时、内存峰值、失败恢复都很差，更适合按照异步任务设计执行。\u003c/p\u003e\n\u003ch4\u003e\u003cstrong\u003e演进方案：同步改异步 + 临时对象存储 + Worker 承担下载\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e本次改动不仅需要 OSS 服务的流式输出支持，还需要 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 支持将批量下载操作一并纳入任务体系。\u003c/p\u003e\n\u003cp\u003e主要改动：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e任务模式：首先\u003cstrong\u003e把「同步大请求」改成「异步任务」\u003c/strong\u003e\n\u003col\u003e\n\u003cli\u003e用户体验由原来的「点击打包后等待结果；如果打包失败，则需要重新跑完整链路」\u003c/li\u003e\n\u003cli\u003e改为：「已开始打包」「打包完成，可下载」「失败，可重试」「可重复下载」\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e校验层面：让后端自己展开目录，不信前端传完整结构\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003e打包工具：ZIP 打包器改为支持流式输出的 Archiver，避免内存峰值过高\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e下载结果存储：下载结果写到临时对象存储，而不是 API 直接回传\u003c/strong\u003e\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e新流程可分为两个阶段：创建任务和后台执行。\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e创建任务\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户发起批量下载操作。\u003c/li\u003e\n\u003cli\u003eBFF 层进行下载文件的参数校验和 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ehostKey-download\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 权限校验。\u003c/li\u003e\n\u003cli\u003e根据 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003erowKeys\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 展开真实文件清单。\u003c/li\u003e\n\u003cli\u003e服务端执行最终兜底校验，计算：\n\u003cul\u003e\n\u003cli\u003e文件总数\u003c/li\u003e\n\u003cli\u003e总大小\u003c/li\u003e\n\u003cli\u003e每个文件真实路径\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003e如果失败，返回结果。\u003c/li\u003e\n\u003cli\u003e如果成功，则生成下载任务。\u003c/li\u003e\n\u003cli\u003e将任务投递给后台 Worker。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    participant User as 用户\n    participant FE as 前端文件页\n    participant API as API 服务\n    participant Task as 任务系统\n    participant FT as fileTransferService\n\n    User-\u003e\u003eFE: 选择文件/目录并点击 Batch Download\n    FE-\u003e\u003eAPI: POST /api/file/createBatchDownloadTask\n    API-\u003e\u003eAPI: 校验参数与 download 权限\n    API-\u003e\u003eFT: 递归展开目录与获取真实文件清单\n    FT--\u003e\u003eAPI: 返回文件树和文件元信息\n    API-\u003e\u003eAPI: 计算 fileCount / totalSize / 目录结构\n    alt 超出限制\n        API--\u003e\u003eFE: 返回校验失败\n    else 校验通过\n        API-\u003e\u003eTask: 创建 TASK_TYPE_BATCH_DOWNLOAD\n        Task--\u003e\u003eAPI: 返回 taskId\n        API--\u003e\u003eFE: 返回 taskId\n    end\n\u003c/div\u003e\n\u003cp\u003e后台 Worker 接手：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e主动轮询检查有无待执行的批量下载任务：\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.getWaitingTask\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e领取任务，获取下载任务细节：为每个文件申请下载 token。\n\u003col\u003e\n\u003cli\u003e小文件优先走流式下载。\u003c/li\u003e\n\u003cli\u003e大文件优先使用下游已有 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003estreamDownload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 能力。\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003e文件流直接 append 到 ZIP 流。\u003c/li\u003e\n\u003cli\u003eZIP 流直接写入 FOSS 的临时对象存储。\u003c/li\u003e\n\u003cli\u003e打包完成后写回任务结果，更新任务状态。\u003c/li\u003e\n\u003cli\u003e用户在 Task 界面下载生成好的 ZIP 包。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    participant Worker as 下载 Worker\n    participant FT as fileTransferService\n    participant FOSS as 对象存储/FOSS\n    participant Task as 任务系统\n    participant FE as 前端\n    participant Browser as 浏览器\n\n    Worker-\u003e\u003eTask: 轮询领取 batch download 任务\n    Worker-\u003e\u003eWorker: 初始化 zip 流和并发控制器\n    loop 遍历文件清单\n        Worker-\u003e\u003eFT: 获取单文件下载 token\n        FT--\u003e\u003eWorker: token + fossKey + size\n        Worker-\u003e\u003eFOSS: 以 streamDownload/流式方式拉取文件\n        FOSS--\u003e\u003eWorker: 文件流\n        Worker-\u003e\u003eWorker: append 到 zip stream\n    end\n    Worker-\u003e\u003eFOSS: 将 zip stream 写入临时存储\n    FOSS--\u003e\u003eWorker: 返回结果位置 zipFossKey\n    Worker-\u003e\u003eTask: 更新任务为 SUCCESS，写入 downloadUrl / expiredAt\n\n    FE-\u003e\u003eTask: 轮询任务状态\n    Task--\u003e\u003eFE: SUCCESS + downloadUrl\n    FE-\u003e\u003eBrowser: 触发下载\n    Browser-\u003e\u003eFOSS: 请求最终 zip\n    FOSS--\u003e\u003eBrowser: 返回 zip 文件流\n\u003c/div\u003e\n\u003cp\u003eWorker 执行的 demo 代码如下：\u003c/p\u003e\n\u003cfigure data-rehype-pretty-code-figure=\"\"\u003e\u003cpre tabindex=\"0\" data-language=\"javascript\" data-theme=\"github-light github-dark\"\u003e\u003ccode data-language=\"javascript\" data-theme=\"github-light github-dark\" style=\"display: grid;\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e// worker/batchDownloadWorker.ts\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003eimport\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e archiver \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003efrom\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e 'archiver'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003eimport\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e { PassThrough } \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003efrom\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e 'node:stream'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003easync\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e function\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003e runWorker\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(\u003c/span\u003e\u003cspan style=\"--shiki-light:#E36209;--shiki-dark:#FFAB70\"\u003eapp\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e) {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e  const\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e opaque\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e `batch-worker-${\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003eprocess\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e.\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003epid\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e}`\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e  const\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e hostKey\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e 'your-host-key'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e  // 1. 抢 host 级别锁，避免多个 worker 同时处理同一 hostKey 的任务\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e  await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003eagentLock\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    hostKey,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    expiry: \u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e'10m'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    opaque,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e  try\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e    while\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e (\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003etrue\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e) {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e      // 2. 拉取待处理任务\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e      const\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e { \u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003etask\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e } \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e=\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003egetWaitingTask\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({ hostKey });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e      if\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e (\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e!\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003etask?.taskId) {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        await\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003e sleep\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e3000\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e);\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        continue\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      }\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e      const\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e taskId\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e task.taskId;\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e      try\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e        // 3. 标记任务开始\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003etaskStart\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          reqId: \u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003egenReqId\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(),\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          taskId,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          currentNode: \u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e1\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e        });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e        // 4. 查询任务详情\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        const\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e detail\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003egetBatchDownloadTask\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({ taskId });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e        // 5. 执行打包\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        const\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e result\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e =\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e await\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003e buildZipAndUpload\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(app, detail);\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e        // 6. 上传结果到 foss\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        await\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e this\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003e_uploadFile\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({ hostKey, path, result })\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e \u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#6A737D;--shiki-dark:#6A737D\"\u003e        // 7. 标记任务成功\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003etaskSuccess\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          reqId: \u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003egenReqId\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(),\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          taskId,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          currentNode: \u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e1\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e        });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      } \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003ecatch\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e (\u003c/span\u003e\u003cspan style=\"--shiki-light:#E36209;--shiki-dark:#FFAB70\"\u003eerr\u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e:\u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e any\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e) {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e        await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003etaskFailed\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          reqId: \u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003egenReqId\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e(),\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          taskId,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          currentNode: \u003c/span\u003e\u003cspan style=\"--shiki-light:#005CC5;--shiki-dark:#79B8FF\"\u003e1\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e          reason: err.message \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e||\u003c/span\u003e\u003cspan style=\"--shiki-light:#032F62;--shiki-dark:#9ECBFF\"\u003e 'batch download failed'\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e,\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e        });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e      }\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e    }\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  } \u003c/span\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003efinally\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e {\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#D73A49;--shiki-dark:#F97583\"\u003e    await\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e app.fileTransferService.\u003c/span\u003e\u003cspan style=\"--shiki-light:#6F42C1;--shiki-dark:#B392F0\"\u003eagentUnlock\u003c/span\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e({ hostKey, opaque });\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e  }\u003c/span\u003e\u003c/span\u003e\n\u003cspan data-line=\"\"\u003e\u003cspan style=\"--shiki-light:#24292E;--shiki-dark:#E1E4E8\"\u003e}\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/pre\u003e\u003c/figure\u003e\n\u003ch4\u003e\u003cstrong\u003e收益\u003c/strong\u003e\u003c/h4\u003e\n\u003col\u003e\n\u003cli\u003e将“用户发起批量下载”和“用户真正下载 ZIP 产物”这两个动作解耦，避免把目录展开、文件拉取、压缩打包、结果回传全部堆在一次 HTTP 请求里，显著缩短单次请求时间。\u003c/li\u003e\n\u003cli\u003e将批量下载正式纳入任务体系后，任务状态可追踪、失败可重试，用户不需要因为一次打包失败就重新跑完整链路。\u003c/li\u003e\n\u003cli\u003eZIP 产物写入临时对象存储后，下载结果可以被重复获取，用户不必长时间停留在当前页面等待打包完成，整体体验更稳定。\u003c/li\u003e\n\u003cli\u003e对服务端来说，原来集中在同步请求里的超时压力、内存峰值和失败恢复问题被拆散到异步 Worker 和对象存储链路中，系统更容易治理和扩展。\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch4\u003e\u003cstrong\u003e更理想的演进方向\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e当前的实现更多是站在 File Interaction 项目自身的角度来承接这项功能。虽然已经借助了下游服务的支持，但仍然可以更进一步。\u003c/p\u003e\n\u003cp\u003e现在批量下载流程中的文件打包依旧挂在 BFF 体系里：前端 → BFF 创建任务，BFF 自己的 Worker 去拉文件、打 ZIP、传 FOSS。\u003c/p\u003e\n\u003cp\u003e这样只是把同步请求改成异步任务，打包压力仍然属于 BFF 这一层。\u003c/p\u003e\n\u003cp\u003e可是如果批量下载的打包与产物管理能力\u003cstrong\u003e改成由下游的\u003c/strong\u003e \u003cstrong\u003e\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e\u003c/strong\u003e \u003cstrong\u003e服务实现\u003c/strong\u003e，将复杂度转移，那么 BFF 可以只保留控制面职责，整体上对本项目会省力很多。\u003c/p\u003e\n\u003cp\u003e尤其是 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 已经包含以下特征：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e它对接 Task 任务中心，已支持创建、上传、删除、同步等任务\u003c/li\u003e\n\u003cli\u003e它天然知道文件位置和文件元数据\u003c/li\u003e\n\u003cli\u003e以后不止这个 BFF 会用到批量下载能力，可以被其他文件后台系统使用\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e真正合理的架构设计，一定不是只会往一个项目里堆复杂度，而是从整个系统层面出发，看怎样分配复杂度最合理。\u003c/p\u003e\n\u003ch3\u003e上传\u003c/h3\u003e\n\u003ch4\u003e\u003cstrong\u003e1.0 流程\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e当时还没有围绕上传暂存区和异步分发建立完整的 Worker 执行链路，所以先沿用同步上传链路。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户点击 Upload 按钮，选择一个或多个文件。\u003c/li\u003e\n\u003cli\u003e前端校验文件数量、扩展名和总大小。\u003c/li\u003e\n\u003cli\u003e前端通过 multipart POST 到 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003e/api/file/batchUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e，同时提交 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ehostKey\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 和 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003epath\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e服务端校验 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ewrite\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 权限和参数。\u003c/li\u003e\n\u003cli\u003e服务端读取每个临时文件，计算 SHA-1。\u003c/li\u003e\n\u003cli\u003e服务端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.generateUploadFileTask\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 创建上传任务，并拿到 FOSS key、\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003espaceId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e、token。\n\u003col\u003e\n\u003cli\u003e若文件小于等于 50MB，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.simpleUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e若文件超过 50MB，则需要进行分块处理，调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.createMultipartUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e、\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.uploadPart\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e、\u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efoss.completeMultipartUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003eFOSS 上传完成后，服务端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.notifyUploadFile\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e，通知上游系统。\u003c/li\u003e\n\u003cli\u003e前端提示上传任务创建成功，后续通过任务状态或列表刷新观察结果。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    autonumber\n    actor User as 用户\n    participant Upload as UploadBtn.vue\n    participant API as FileController\n    participant FileSvc as fileTransferService\n    participant FOSS as foss\n\n    User-\u003e\u003eUpload: 点击 Upload 并选择文件\n    Upload-\u003e\u003eUpload: 校验文件数量不超过 10\n    Upload-\u003e\u003eUpload: 校验扩展名白名单\n    Upload-\u003e\u003eUpload: 校验总大小不超过 500MB\n    Upload-\u003e\u003eAPI: POST /api/file/batchUpload\u0026#x3C;br/\u003emultipart files + hostKey + path\n\n    API-\u003e\u003eAPI: 校验 write 权限\n    API-\u003e\u003eAPI: 校验 multipart 参数\n\n    loop 每个上传文件\n        API-\u003e\u003eAPI: 读取临时文件流\n        API-\u003e\u003eAPI: 计算 SHA1 和文件大小\n        API-\u003e\u003eFileSvc: generateUploadFileTask(reqId, location, sha1, size)\n        FileSvc--\u003e\u003eAPI: 返回 taskId、fossKey、spaceId、token\n\n        alt 文件大小 \u003e 50MB\n            API-\u003e\u003eFOSS: createMultipartUpload(spaceId,fossKey,partSize)\n            FOSS--\u003e\u003eAPI: 返回 uploadId\n            loop 每个 10MB 分片\n                API-\u003e\u003eFOSS: uploadPart(uploadId,partNum,data)\n                FOSS--\u003e\u003eAPI: 返回 etag\n            end\n            API-\u003e\u003eFOSS: completeMultipartUpload(uploadId,parts)\n            FOSS--\u003e\u003eAPI: 分块上传完成\n        else 文件大小不超过 50MB\n            API-\u003e\u003eFOSS: simpleUpload(spaceId,fossKey,data,token)\n            FOSS--\u003e\u003eAPI: 上传完成\n        end\n\n        API-\u003e\u003eFileSvc: notifyUploadFile(reqId, taskId)\n        FileSvc--\u003e\u003eAPI: 确认通知\n    end\n\n    API--\u003e\u003eUpload: 返回 taskIdList\n    Upload--\u003e\u003eUser: 提示上传任务创建成功\n\u003c/div\u003e\n\u003ch4\u003e\u003cstrong\u003e痛点：请求链路过长，内存容易占用过高\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e1.0 上传操作的实现问题跟批量下载类似：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e一次请求链路过长：\n\u003cul\u003e\n\u003cli\u003e前端通过 multipart 把文件传给 BFF。\u003c/li\u003e\n\u003cli\u003eBFF 读取临时文件流，并把内容不断 Buffer.concat 到 content。\u003c/li\u003e\n\u003cli\u003eBFF 再把整块 content 上传到 FOSS。\u003c/li\u003e\n\u003cli\u003e上传成功后调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003enotifyUploadFile\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003cli\u003e内存容易占用过高：整块文件上传时都会被聚合到内存中，多个大文件同时上传内存占用率极高，很容易造成服务瘫痪。\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch4\u003e\u003cstrong\u003e演进方案：同步改异步 + 引入暂存区 + Worker 承担上传任务\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e重新设计时需要引入文件\u003cstrong\u003e暂存区：也就是前端上传到 BFF 层后，BFF 不直接上传给 FOSS 文件存储服务，而是先存在服务器的暂存区上，后续由 Worker 分发\u003c/strong\u003e。\u003c/p\u003e\n\u003cp\u003e把上传链路拆成三段：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e\u003cstrong\u003eInit\u003c/strong\u003e\n前端先声明本次上传的元信息，服务端完成权限和规则校验，创建 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadBatchId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 与 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadFileId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eStage\u003c/strong\u003e\n前端把文件上传到 BFF 的 staging 接口，BFF 以流式方式写入共享暂存区，并在写入过程中计算 SHA-1、统计大小。\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003eTransfer\u003c/strong\u003e\nstaging 完成后，服务端创建正式上传任务，并由异步 Worker 从暂存区流式上传到 FOSS，最后调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003enotifyUploadFile\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e新流程可以分为两个阶段：\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e第一阶段：上传到暂存区\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e用户在前端点击 Upload，选择文件。\u003c/li\u003e\n\u003cli\u003e前端先做一轮轻量校验，例如文件数量、扩展名。\u003c/li\u003e\n\u003cli\u003e前端调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ePOST /api/file/upload/init\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e，服务端校验上传权限、文件数量、扩展名和总大小，并返回 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadBatchId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 和每个文件对应的 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadFileId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e前端按文件逐个调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ePOST /api/file/upload/stage\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003eBFF 先校验 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadFileId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 当前状态，然后将文件流式写入 staging 暂存区，并在写入过程中同步计算 SHA-1 和实际大小。\u003c/li\u003e\n\u003cli\u003estaging 完成后，BFF 调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003efileTransferService.generateUploadFileTask(location, sha1, size)\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 创建正式上传任务，拿到 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003etaskId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 等信息。\u003c/li\u003e\n\u003cli\u003eBFF 投递异步 Worker 任务，并把 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003etaskId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 返回给前端。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e\u003cstrong\u003e第二阶段：后台异步上传到正式存储\u003c/strong\u003e\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003eNode Worker 在后台从 staging 区读取文件流。\u003c/li\u003e\n\u003cli\u003e小文件直接走 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003eStreamUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 或 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003esimpleUpload(stream)\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e大文件走 multipart 分片上传：先创建 multipart upload，再并发上传各个分片，最后调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ecompleteMultipartUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e。\u003c/li\u003e\n\u003cli\u003e正式上传完成后，Worker 调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003enotifyUploadFile(taskId)\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 通知上游。\u003c/li\u003e\n\u003cli\u003e通知成功后，再删除 staging 暂存对象。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cdiv class=\"mermaid-diagram not-prose\" data-mermaid=\"true\" aria-label=\"Mermaid diagram\"\u003esequenceDiagram\n    autonumber\n    actor User as 用户\n    participant FE as 前端 Upload\n    participant API as BFF API\n    participant Stage as Staging Storage\n    participant Worker as Upload Worker\n    participant FileSvc as fileTransferService\n    participant FOSS as FOSS\n\n    User-\u003e\u003eFE: 选择文件并点击上传\n    FE-\u003e\u003eFE: 本地轻量校验\n    FE-\u003e\u003eAPI: POST /api/file/upload/init\n    API-\u003e\u003eAPI: 校验权限、数量、扩展名、总大小\n    API--\u003e\u003eFE: 返回 uploadBatchId + uploadFileId 列表\n\n    loop 每个文件\n        FE-\u003e\u003eAPI: POST /api/file/upload/stage\n        API-\u003e\u003eAPI: 校验 uploadFileId 状态\n        API-\u003e\u003eStage: 流式写入暂存区\n        API-\u003e\u003eAPI: 流式计算 SHA1 / actualSize\n        Stage--\u003e\u003eAPI: staging 完成\n        API-\u003e\u003eFileSvc: generateUploadFileTask(location, sha1, size)\n        FileSvc--\u003e\u003eAPI: 返回 taskId + fossKey + credential\n        API-\u003e\u003eWorker: 投递 UploadStagedFile 任务\n        API--\u003e\u003eFE: 返回 taskId\n    end\n\n    par 后台异步执行\n        Worker-\u003e\u003eStage: 读取 staging 文件流\n        alt 文件较小\n            Worker-\u003e\u003eFOSS: StreamUpload 或 simpleUpload(stream)\n        else 文件较大\n            Worker-\u003e\u003eFOSS: createMultipartUpload\n            loop 有限并发分片上传\n                Worker-\u003e\u003eFOSS: uploadPart(partNum, chunkStream)\n                FOSS--\u003e\u003eWorker: etag\n            end\n            Worker-\u003e\u003eFOSS: completeMultipartUpload\n        end\n        Worker-\u003e\u003eFileSvc: notifyUploadFile(taskId)\n        FileSvc--\u003e\u003eWorker: 通知成功\n        Worker-\u003e\u003eStage: 删除暂存对象\n    and 前端轮询\n        FE-\u003e\u003eAPI: 查询 uploadBatch/task 状态\n        API--\u003e\u003eFE: 返回状态与错误信息\n    end\n\u003c/div\u003e\n\u003ch4\u003e\u003cstrong\u003e收益\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e\u003cstrong\u003e这个方案的关键价值在于：\u003c/strong\u003e\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e浏览器到 BFF 的请求完成后就可以返回，\u003cstrong\u003e不再阻塞后续 FOSS 上传\u003c/strong\u003e。\u003c/li\u003e\n\u003cli\u003eBFF 不需要把整个文件读进内存，\u003cstrong\u003e减少内存负担\u003c/strong\u003e。\u003c/li\u003e\n\u003cli\u003e上传状态被拆成明确步骤，可以针对具体步骤重试。\u003c/li\u003e\n\u003cli\u003e暂存区让\u003cstrong\u003e异步 Worker 可以跨请求继续执行\u003c/strong\u003e，不依赖单个 HTTP 请求生命周期。\u003c/li\u003e\n\u003cli\u003e和现有任务页、任务状态体系更容易对齐。\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch4\u003e\u003cstrong\u003e扩展思考：为什么大文件上传还是用分片不用流\u003c/strong\u003e\u003c/h4\u003e\n\u003cp\u003e即便下游的文件存储服务支持流式上传，大文件还是\u003cstrong\u003e优先用分块上传\u003c/strong\u003e。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e流式上传作为单个请求，一旦失败，通常要从头再来。分片上传只需要重传失败的那几个 part。\u003c/li\u003e\n\u003cli\u003e长连接更脆弱：大文件意味着一个请求持续很久，更容易碰到网络抖动、代理超时、连接重置。分片后，每个请求更短，更容易成功。\u003c/li\u003e\n\u003cli\u003e分块请求是可管理的，更适合断点恢复。Multipart 通常有 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e + \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003eetag\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 机制。\u003c/li\u003e\n\u003cli\u003eWorker 重试时可以复用已完成分片，不必重传全部；并且可以并发，提高吞吐。单流上传本质上是一条通道慢慢送，分片上传可以多个 part 并发跑，更容易把带宽吃满。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e反过来，大文件的下载却优先用流式，这是二者的目的和架构决定的。\u003c/p\u003e\n\u003cp\u003e大文件下载当然也包含同样的问题：单次请求时间长、长连接脆弱、失败重试成本高。\u003c/p\u003e\n\u003cp\u003e那为啥不用并发呢？\u003c/p\u003e\n\u003cp\u003e因为\u003cstrong\u003e上传分块的收益更明显，而下载分块的代价更重\u003c/strong\u003e。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e上传分片在当前项目中已有明确支持，下载分块没有同等强的闭环。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e上传到 OSS 服务时，multipart 是存储系统原生支持的协议：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e先拿到 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003euploadId\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e\u003c/li\u003e\n\u003cli\u003e每个 part 独立上传\u003c/li\u003e\n\u003cli\u003e成功的 part 被存储系统记住\u003c/li\u003e\n\u003cli\u003e最后调用 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ecompleteMultipartUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 收尾\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e下游的存储服务已经预先帮我们完成了分块逻辑的实现。\u003c/p\u003e\n\u003cp\u003e对比下下载是把一个连续的字节流交给用户，如果要拆成多个文件块并发，那么：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e分块的顺序\u003c/li\u003e\n\u003cli\u003e如何拼装分块\u003c/li\u003e\n\u003cli\u003e拼装时写哪里\u003c/li\u003e\n\u003cli\u003e浏览器能不能准确接收\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e全部都是要自己管理的问题，而且下载侧也没有 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003ecompleteMultipartUpload\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 这样的收尾接口。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e上传的重点是「落盘」，下载重点是「交付」\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e上传的核心在于稳定地写进 OSS 服务，所以分块传输更加稳定可靠，即便要多耗时间也是可以接受的。\u003c/p\u003e\n\u003cp\u003e但是对于文件下载，我们的目标应当是把文件尽快送到用户手里，这个场景最自然的交付模型就是连续流：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e上游读一点，BFF 发一点，浏览器收一点。\u003c/li\u003e\n\u003c/ul\u003e\n\u003cp\u003e总结说下载分块不是不能做，只是对比流下载，它的复杂度更容易超过收益。\u003c/p\u003e\n\u003cp\u003e\u003cstrong\u003e总结\u003c/strong\u003e\u003c/p\u003e\n\u003cp\u003e大文件上传和下载虽然都面临长连接、失败重试成本高的问题，但默认取舍不同。\u003c/p\u003e\n\u003cp\u003e上传侧的 multipart 是对象存储原生支持的可靠协议，天然具备分片持久化、局部重试和最终合并能力；\u003c/p\u003e\n\u003cp\u003e而下载侧的目标是把连续字节流交付给用户，流式透传已经是最自然的实现。\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e下载分块通常要额外解决 Range 调度、分段重试、顺序拼装和客户端承接能力，因此只有在断点续传、并发加速或按区间读取等场景下，才会引入分块下载。\u003c/li\u003e\n\u003cli\u003e所以默认的大文件下载仍然优先流式。\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch2\u003e工程化思考\u003c/h2\u003e\n\u003ch3\u003eBFF 层做安全兜底\u003c/h3\u003e\n\u003cp\u003e把太多校验责任放在前端，是前端同学刚开始接手全栈开发时常见的误区。要意识到用户是可以绕过前端页面直接发请求的，所以前端的校验更多是为了用户体验，在不合法请求发出前就尽早拦截并提醒用户。\u003c/p\u003e\n\u003cp\u003e而且 BFF 中转不只是校验安全兜底，比如从文件下载角度出发，下载链路除了「把文件发给浏览器」，还要统一处理：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e\u003cstrong\u003e权限校验\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e下载审计\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e下游协议适配\u003c/strong\u003e\u003c/li\u003e\n\u003cli\u003e\u003cstrong\u003e浏览器侧响应头控制\u003c/strong\u003e\u003c/li\u003e\n\u003c/ul\u003e\n\u003ch3\u003e参数调优\u003c/h3\u003e\n\u003cp\u003e在历史方案中，下载分块涉及几个关键经验参数，例如 50MB 的大小文件分界线、10MB 的分块大小，以及 \u003cspan data-rehype-pretty-code-figure=\"\"\u003e\u003ccode data-language=\"text\" data-theme=\"github-light github-dark\"\u003e\u003cspan data-line=\"\"\u003e\u003cspan\u003eMAX_PART_CONCURRENCY\u003c/span\u003e\u003c/span\u003e\u003c/code\u003e\u003c/span\u003e 并发数。这些都是实际开发中的经验值。\u003c/p\u003e\n\u003cp\u003e在项目上线后，应当结合日志进行动态调整，保证当前项目功能运行在最佳状态。\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e\n\u003cp\u003e首先这些参数应该设置成可以被灰度发布的环境变量参数。\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e接着，如何结合日志动态调整参数：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e文件区间边缘的下载失败数：如果 50MB 以下常常超时，那就需要下调；如果 50MB 以上稳定，反而因为分块延长了下载时间，那就需要上调。\u003c/li\u003e\n\u003cli\u003e分块请求是否经常超时：如果经常超时，那就需要下调分块大小；反过来，分块请求稳定，但常常请求过多导致 CPU 过载，那就调大分块。\u003c/li\u003e\n\u003cli\u003e并发数：\n\u003cul\u003e\n\u003cli\u003e如果错误集中出现在并发波次，\u003cstrong\u003e服务端内存峰值高\u003c/strong\u003e，同时有\u003cstrong\u003e多个用户下载大文件\u003c/strong\u003e时服务器扛不住，那就下调。\u003c/li\u003e\n\u003cli\u003e如果总耗时瓶颈在「下载串行波次多」，那就上调。\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e具体操作：一次只改一个参数，这样才能确定是哪个参数的调整实际起效了。\u003c/p\u003e\n\u003c/li\u003e\n\u003cli\u003e\n\u003cp\u003e如何验收：\u003c/p\u003e\n\u003cp\u003e调参前先选定一个主要观察指标，例如下载成功率、P95 耗时或服务端内存峰值，避免多个目标同时变化导致结论不清晰。如果调整后能够明显观察到对应指标的变动，比如：\u003c/p\u003e\n\u003cul\u003e\n\u003cli\u003e成功率提升\u003c/li\u003e\n\u003cli\u003e平均耗时 / P95 下降\u003c/li\u003e\n\u003cli\u003e服务端内存峰值下降\u003c/li\u003e\n\u003cli\u003e超时 / 重试次数减少\n那就可以肯定本次调整有效。\u003c/li\u003e\n\u003c/ul\u003e\n\u003c/li\u003e\n\u003c/ol\u003e\n\u003ch3\u003e从同步请求到异步任务\u003c/h3\u003e\n\u003cp\u003e对于文件下载、文件上传这类操作，单次请求完成当然最直接；但当文件体量上升后，请求耗时变长、失败重试成本变高，就需要考虑从同步请求切换到异步任务。\u003c/p\u003e\n\u003cp\u003e判断一个操作是否适合升级为异步任务，通常可以看三个条件：\u003c/p\u003e\n\u003col\u003e\n\u003cli\u003e是否是长链路、长耗时操作。\u003cbr\u003e\n例如批量下载包含目录展开、文件拉取、压缩打包和结果回传，不适合全部堆在一次 HTTP 请求里。\u003c/li\u003e\n\u003cli\u003e失败后是否重试成本高。\u003cbr\u003e\n如果一次失败就要重新上传整文件、重新打整包，用户体验和系统成本都会很差。\u003c/li\u003e\n\u003cli\u003e是否可以拆成「发起请求」和「拿到最终结果」两个阶段。\u003cbr\u003e\n比如下载场景中，用户点击批量下载，和最终拿到生成产物可以解耦；上传场景中，用户把文件提交到系统，和最终通知上游文件可用也可以解耦。\u003c/li\u003e\n\u003c/ol\u003e\n\u003cp\u003e这类任务化设计的价值，不只是降低单次请求压力，更重要的是让状态可观测、失败可重试、执行链路可恢复。\u003c/p\u003e\n\u003ch2\u003e总结\u003c/h2\u003e\n\u003cp\u003e本文对富途的文件中台项目的架构、核心功能实现以及演进方向进行了详细复盘。重点不在于某个接口如何写，而是在文件中台场景下，开发者如何结合项目背景，根据文件大小、失败成本、下游能力和链路长度，在同步请求、流式传输、分片上传、异步任务之间做取舍。\u003c/p\u003e"])</script><script>self.__next_f.push([1,"4:[\"$\",\"div\",null,{\"className\":\"min-h-screen bg-white dark:bg-black\",\"children\":[\"$\",\"main\",null,{\"className\":\"mx-auto max-w-2xl px-6 py-20\",\"children\":[[\"$\",\"$Ld\",null,{\"href\":\"/blog\",\"className\":\"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100\",\"children\":\"← 所有文章\"}],[\"$\",\"article\",null,{\"children\":[[\"$\",\"header\",null,{\"className\":\"mb-10\",\"children\":[[\"$\",\"time\",null,{\"className\":\"text-sm text-zinc-400\",\"children\":\"2026-08-13\"}],[\"$\",\"h1\",null,{\"className\":\"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50\",\"children\":\"富途文件管理中台系统架构分析\"}],[\"$\",\"p\",null,{\"className\":\"mt-3 text-lg text-zinc-500 dark:text-zinc-400\",\"children\":\"复盘我在富途做的文件管理中台项目，包含技术栈选型，下载功能和上传功能全链路分析和优化方案，架构设计的思考\"}],[\"$\",\"ul\",null,{\"className\":\"mt-4 flex flex-wrap gap-2\",\"children\":[[\"$\",\"li\",\"futu\",{\"children\":[\"$\",\"$Ld\",null,{\"href\":\"/tags/futu\",\"className\":\"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600\",\"children\":\"futu\"}]}],[\"$\",\"li\",\"file-download\",{\"children\":[\"$\",\"$Ld\",null,{\"href\":\"/tags/file-download\",\"className\":\"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600\",\"children\":\"file-download\"}]}]]}]]}],[\"$\",\"$Le\",null,{\"html\":\"$f\"}]]}]]}]}]\n"])</script><script>self.__next_f.push([1,"7:null\nb:[[\"$\",\"title\",\"0\",{\"children\":\"富途文件管理中台系统架构分析\"}],[\"$\",\"meta\",\"1\",{\"name\":\"description\",\"content\":\"复盘我在富途做的文件管理中台项目，包含技术栈选型，下载功能和上传功能全链路分析和优化方案，架构设计的思考\"}],[\"$\",\"link\",\"2\",{\"rel\":\"icon\",\"href\":\"/favicon.ico?favicon.0b3bf435.ico\",\"sizes\":\"256x256\",\"type\":\"image/x-icon\"}],[\"$\",\"$L10\",\"3\",{}]]\n"])</script></body></html>
