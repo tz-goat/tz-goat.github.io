@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @plugin "@tailwindcss/typography";
 
+/**
+ * @description 主题 token 的默认值使用亮色。
+ * ThemeProvider 会把最终主题结果写到 `html[data-theme]`，
+ * 然后由下面的覆盖规则决定页面真正使用哪套颜色。
+ */
 :root {
   --background: #ffffff;
   --foreground: #171717;
@@ -13,13 +18,20 @@
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+/**
+ * @description 深色主题不再直接跟随系统媒体查询，
+ * 而是统一听 `html[data-theme="dark"]` 的结果。
+ * 这样用户手动切换 light / dark / system 时，CSS 能和 Context 保持一致。
+ */
+html[data-theme="dark"] {
+  --background: #0a0a0a;
+  --foreground: #ededed;
 }
 
+/**
+ * @description body 只消费主题 token，不关心主题来源。
+ * 这也是主题系统分层的关键：样式层不需要知道 Context 的内部逻辑。
+ */
 body {
   background: var(--background);
   color: var(--foreground);
