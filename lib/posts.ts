@@ -17,7 +17,7 @@ const prettyCodeOptions: RehypePrettyCodeOptions = {
   },
   keepBackground: false,
   defaultLang: {
-    block: "text",
+    block: "bash",
     inline: "text",
   },
 };
@@ -253,7 +253,7 @@ export async function getPostBySlug(slug: string): Promise<Post> {
     .use(normalizeMarkdownCodeLanguages)
     .use(remarkGfm)
     .use(remarkRehype)
-      .use(rehypeMermaidBlocks)
+    .use(rehypeMermaidBlocks)
     .use(rehypePrettyCode, prettyCodeOptions)
     .use(rehypeStringify)
     .process(content);

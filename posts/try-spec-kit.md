@@ -71,7 +71,7 @@ spec其实就是specify的缩写, 翻译过来就是说详细点,Spec-Driven Dev
 
 ## 安装
 
-```
+```bash
 uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z
 
 ```
@@ -79,7 +79,7 @@ uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX
 ## 实际执行
 
 在实际使用specify之前需要先初始化项目，通常要引入，就运行下面的命令
-```
+```bash
 specify init --here
 ```
 
@@ -93,7 +93,7 @@ spec-kit分步骤执行，首先要通过constituion初始化项目, 然后用sp
 
 spec-kit会创建一个`.specify`文件夹，里面包含以下文件
 
-```
+```bash
 - memory
 - scripts\powershell
 - templates
@@ -121,7 +121,7 @@ constitution直译为宪章，在初始化的时候运行一次就好
 
 这一步加特性，写上你的需求，包括what和why
 
-```
+```bash
 /speckit.specify 我想要让博客文章支持tags功能，每个文章应该会有至少一个tag，可以包含多个， 用户可以通过tag路由：`/tags/spec/` 访问包含该tag的所有文章, 方便用户访问特定种类的文章
 ```
 
@@ -152,7 +152,7 @@ to-do: plan和tasks的区别是什么，这里要填什么，跟前面的specify
 
 - 执行到这里的时候是不是不填也可以？
 
-```
+```bash
 /speckit.plan
 ```
 
