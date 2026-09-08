@@ -2,6 +2,7 @@
 
 import mediumZoom from "medium-zoom";
 import { memo, useCallback, useEffect, useRef, useState } from "react";
+import { useTheme } from "@/app/theme-provider";
 
 /** Markdown 正文最终产出的 HTML 字符串。 */
 interface PostContentProps {
@@ -35,10 +36,12 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
 }: ArticleHtmlContentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const imageZoomRef = useRef<ReturnType<typeof mediumZoom> | null>(null);
+  const { resolvedTheme } = useTheme();
 
   /**
    * 把服务端输出的 Mermaid 占位节点替换成真正的 SVG。
-   * 这段逻辑只依赖 html，因为文章正文变化时才需要重新扫描并渲染。
+   * 这段逻辑依赖 html 和 resolvedTheme：
+   * 文章切换时需要重新扫描，主题切换时也需要让 Mermaid SVG 改用新的配色。
    */
   useEffect(() => {
     let cancelled = false;
@@ -57,8 +60,6 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
         return;
       }
 
-        /** Mermaid 主题跟随系统明暗模式，避免图表和正文主题割裂。 */
-      const prefersDark = window.matchMedia("(prefers-color-scheme: dark)").matches;
       const mermaid = (await import("mermaid")).default;
 
       if (cancelled) {
@@ -68,7 +69,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
         /** Mermaid 在当前文章容器内只初始化一次，然后复用到每个图表节点。 */
       mermaid.initialize({
         startOnLoad: false,
-        theme: prefersDark ? "dark" : "default",
+        theme: resolvedTheme === "dark" ? "dark" : "default",
       });
 
       for (const [index, block] of mermaidBlocks.entries()) {
@@ -115,7 +116,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
     return () => {
       cancelled = true;
     };
-  }, [html]);
+  }, [html, resolvedTheme]);
 
   /**
    * 为正文中的普通图片接入 medium-zoom。
@@ -137,7 +138,8 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
 
     const zoom = mediumZoom(images, {
       margin: 32,
-      background: "rgba(9, 9, 11, 0.88)",
+      background:
+        resolvedTheme === "dark" ? "rgba(9, 9, 11, 0.88)" : "rgba(255, 255, 255, 0.88)",
     });
     imageZoomRef.current = zoom;
 
@@ -147,7 +149,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
         imageZoomRef.current = null;
       }
     };
-  }, [html]);
+  }, [html, resolvedTheme]);
 
   /**
    * 事件代理处理 Mermaid 图的点击和键盘触发。
