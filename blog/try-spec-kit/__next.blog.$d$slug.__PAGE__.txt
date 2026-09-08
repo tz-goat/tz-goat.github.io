@@ -1,9 +1,9 @@
 1:"$Sreact.fragment"
-2:I[78622,["/_next/static/chunks/2bb90e739ce69181.js","/_next/static/chunks/cae2bdb627f7afc3.js"],""]
-3:I[53220,["/_next/static/chunks/2bb90e739ce69181.js","/_next/static/chunks/cae2bdb627f7afc3.js"],"default"]
+2:I[78622,["/_next/static/chunks/2bb90e739ce69181.js","/_next/static/chunks/2b919c1591c25e70.js"],""]
+3:I[53220,["/_next/static/chunks/2bb90e739ce69181.js","/_next/static/chunks/2b919c1591c25e70.js"],"default"]
 7:I[9871,["/_next/static/chunks/e3e74710d54a4448.js","/_next/static/chunks/ff0e1f204386c9a8.js"],"OutletBoundary"]
 8:"$Sreact.suspense"
-4:T5297,<p>开发这个blog网站的时候我是用了当下很火的Spec kit开发流程
+4:T59d5,<p>开发这个blog网站的时候我是用了当下很火的Spec kit开发流程
 to-do： 这里还需要一个目录，目录，目录</p>
 <h2>0701速记</h2>
 <p>constitution可以规定项目的整体原则，比如这个项目的目的，代码风格
@@ -40,11 +40,11 @@ functional requirements</li>
 <li><a href="https://www.youtube.com/watch?v=SGHIQTsPzuY&#x26;t">Using GitHub Spec Kit with your EXISTING PROJECTS</a></li>
 </ul>
 <h2>安装</h2>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light github-dark"><code data-language="text" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span>uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z</span></span>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">uv</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> tool</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> install</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> specify-cli</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> --from</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> git+https://github.com/github/spec-kit.git@vX.Y.Z</span></span>
 <span data-line=""> </span></code></pre></figure>
 <h2>实际执行</h2>
 <p>在实际使用specify之前需要先初始化项目，通常要引入，就运行下面的命令</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light github-dark"><code data-language="text" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span>specify init --here</span></span></code></pre></figure>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">specify</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> init</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF"> --here</span></span></code></pre></figure>
 <p>spec-kit分步骤执行，首先要通过constituion初始化项目, 然后用specify命令增加需求，接着再用clarify帮助agent澄清本次新增特性的疑惑点，agent随后用plan命令创建实行计划，接着用tasks列出细致的实现细节，最后运行implement命令按照tasks中的步骤实现功能</p>
 <p>比如过我要给我的博客增加一个特性，那在这之前</p>
 <ul>
@@ -53,12 +53,12 @@ functional requirements</li>
 </ul>
 <h3>spec-kit的文件结构</h3>
 <p>spec-kit会创建一个<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>.specify</span></span></code></span>文件夹，里面包含以下文件</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light github-dark"><code data-language="text" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span>- memory</span></span>
-<span data-line=""><span>- scripts\powershell</span></span>
-<span data-line=""><span>- templates</span></span>
-<span data-line=""><span>- integrations</span></span>
-<span data-line=""><span>- init-options.json</span></span>
-<span data-line=""><span>- integration.json</span></span></code></pre></figure>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> memory</span></span>
+<span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> scripts</span><span style="--shiki-light:#005CC5;--shiki-dark:#79B8FF">\p</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">owershell</span></span>
+<span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> templates</span></span>
+<span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> integrations</span></span>
+<span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> init-options.json</span></span>
+<span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">-</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> integration.json</span></span></code></pre></figure>
 <h3>1. constitution</h3>
 <p>constitution直译为宪章，在初始化的时候运行一次就好</p>
 <p>它会描述这个项目的基础技术栈和定位，方便后续开发时候进行参考</p>
@@ -77,7 +77,7 @@ functional requirements</li>
 </ul>
 <h3>2. specify</h3>
 <p>这一步加特性，写上你的需求，包括what和why</p>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light github-dark"><code data-language="text" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span>/speckit.specify 我想要让博客文章支持tags功能，每个文章应该会有至少一个tag，可以包含多个， 用户可以通过tag路由：`/tags/spec/` 访问包含该tag的所有文章, 方便用户访问特定种类的文章</span></span></code></pre></figure>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">/speckit.specify</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 我想要让博客文章支持tags功能，每个文章应该会有至少一个tag，可以包含多个，</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 用户可以通过tag路由：`</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">/tags/spec/</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF">`</span><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0"> 访问包含该tag的所有文章,</span><span style="--shiki-light:#032F62;--shiki-dark:#9ECBFF"> 方便用户访问特定种类的文章</span></span></code></pre></figure>
 <p><strong>它做了什么?</strong></p>
 <ul>
 <li>首先，自动切换到一个新的分支：<span data-rehype-pretty-code-figure=""><code data-language="text" data-theme="github-light github-dark"><span data-line=""><span>001-blog-post-tags</span></span></code></span></li>
@@ -101,7 +101,7 @@ functional requirements</li>
 <ul>
 <li>执行到这里的时候是不是不填也可以？</li>
 </ul>
-<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="text" data-theme="github-light github-dark"><code data-language="text" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span>/speckit.plan</span></span></code></pre></figure>
+<figure data-rehype-pretty-code-figure=""><pre tabindex="0" data-language="bash" data-theme="github-light github-dark"><code data-language="bash" data-theme="github-light github-dark" style="display: grid;"><span data-line=""><span style="--shiki-light:#6F42C1;--shiki-dark:#B392F0">/speckit.plan</span></span></code></pre></figure>
 <p>可以看到这个步骤的具体产物有这些</p>
 <ul>
 <li>Reasearch
@@ -168,7 +168,7 @@ functional requirements</li>
 </ul>
 <p>但是运行过之后我对于这种开发流程有了新的认识，我不再觉得这些文件是累赘</p>
 <p>它确实能帮助梳理需求，特别是对于复杂特性，能保证没有遗漏的edge case，比如我增加tag功能，agent会帮我梳理出哪些路由需要增加，哪些文件需要修改，哪些测试用例需要增加，哪些文档需要补充，而且这些文件都是模板化的，可以复用，所以不会增加太多工作量</p>
-<p>还有spec-kit会在实现特性的过程中自动切换分支，这一点很方便</p>0:{"buildId":"TxvvZY_VOyffx-tm6AeG2","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"Spec-Kit实战"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"本篇文章记录我如何通过spec kit优化自己的博客网站，增加tag和选择性展示等功能，以及对spect-kit使用的一些个人感悟"}],["$","ul",null,{"className":"mt-4 flex flex-wrap gap-2","children":[["$","li","spec-kit",{"children":["$","$L2",null,{"href":"/tags/spec-kit","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"spec-kit"}]}],["$","li","meta",{"children":["$","$L2",null,{"href":"/tags/meta","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"meta"}]}]]}]]}],["$","$L3",null,{"html":"$4"}]]}]]}]}],["$L5"],"$L6"]}],"loading":null,"isPartial":false}
-5:["$","script","script-0",{"src":"/_next/static/chunks/cae2bdb627f7afc3.js","async":true}]
+<p>还有spec-kit会在实现特性的过程中自动切换分支，这一点很方便</p>0:{"buildId":"c594XiWvRJ1Bl9_xP9EIZ","rsc":["$","$1","c",{"children":[["$","div",null,{"className":"min-h-screen bg-white dark:bg-black","children":["$","main",null,{"className":"mx-auto max-w-2xl px-6 py-20","children":[["$","$L2",null,{"href":"/blog","className":"mb-12 inline-flex items-center gap-1 text-sm text-zinc-500 hover:text-zinc-900 dark:hover:text-zinc-100","children":"← 所有文章"}],["$","article",null,{"children":[["$","header",null,{"className":"mb-10","children":[["$","time",null,{"className":"text-sm text-zinc-400","children":"2026-04-06"}],["$","h1",null,{"className":"mt-2 text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50","children":"Spec-Kit实战"}],["$","p",null,{"className":"mt-3 text-lg text-zinc-500 dark:text-zinc-400","children":"本篇文章记录我如何通过spec kit优化自己的博客网站，增加tag和选择性展示等功能，以及对spect-kit使用的一些个人感悟"}],["$","ul",null,{"className":"mt-4 flex flex-wrap gap-2","children":[["$","li","spec-kit",{"children":["$","$L2",null,{"href":"/tags/spec-kit","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"spec-kit"}]}],["$","li","meta",{"children":["$","$L2",null,{"href":"/tags/meta","className":"inline-block rounded-full border border-zinc-200 bg-zinc-50 px-3 py-1 text-sm text-zinc-600 hover:border-zinc-300 hover:bg-zinc-100 dark:border-zinc-700 dark:bg-zinc-900 dark:text-zinc-300 dark:hover:border-zinc-600","children":"meta"}]}]]}]]}],["$","$L3",null,{"html":"$4"}]]}]]}]}],["$L5"],"$L6"]}],"loading":null,"isPartial":false}
+5:["$","script","script-0",{"src":"/_next/static/chunks/2b919c1591c25e70.js","async":true}]
 6:["$","$L7",null,{"children":["$","$8",null,{"name":"Next.MetadataOutlet","children":"$@9"}]}]
 9:null
