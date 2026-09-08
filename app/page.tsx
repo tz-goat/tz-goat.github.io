@@ -6,10 +6,10 @@ export default function Home() {
   const recentPosts = posts.slice(0, 3);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
+    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
       <main className="w-full max-w-2xl px-6 py-20">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
-          我的博客
+          二魔的博客
         </h1>
         <p className="mt-3 text-zinc-500 dark:text-zinc-400">
           记录学习与思考。
