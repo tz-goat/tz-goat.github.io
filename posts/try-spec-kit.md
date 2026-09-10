@@ -7,48 +7,6 @@ tags:
   - "meta"
 ---
 
-开发这个blog网站的时候我是用了当下很火的Spec kit开发流程
-to-do： 这里还需要一个目录，目录，目录
-
-<!-- 写spect-kit应该cover什么
-
-what
-
-优点
-
-缺点
-
-怎么使用spec-kit， 这其中包含哪些坑点
-- 这里可以增加一个命令行
-- 
-
-如何用最好，什么样的项目适合用spec-kit
-
-创建一个项目用spec-kit,  -->
-
-## 0701速记
-
-constitution可以规定项目的整体原则，比如这个项目的目的，代码风格
-`speckit-constitution` 这是一个网页游戏应用，应当保持代码整洁，核心代码要有注释提示
-- 不仅可以通过skill更新，也可以直接让agent去更新这个文件：.specify/memory/constitution.md
-
-Clarify underspecified areas (recommended before /speckit.plan);
-
-specify声明特性，在constitution完成后执行，声明你想增加的特性，
-- `speckit-specify` 创建一个基础的web 小游戏应用平台，主要用途娱乐，教育，儿童友好，方便我在开发过程中熟悉基础算法知识
-生成一个spec.md:其中包含多个用户案例，user story，比如用户可以无需登陆打开游戏试玩
-functional requirements
-- 网站必须提供游戏列表供选择，游戏中必须包含相应的教育性内容
-
-PLAn技术选型
-- 我专门挑了我不太熟悉的html canavs和naive UI,
-- 有research.md对于技术选型做调研，对比其他同类型技术
-- data-model.md，对于选中的游戏的数据模型
-
-taks将任务细化成具体的可实现的操作
-- 这一步就可以切换模型，切换成可以去具体实现
-
-
 ## 什么是Spec-kit
 
 Spec-kit是一个Spec-Driven Development开发思想的实践工具，通过安装specify-cli命令行工具，可以细化开发流程中的特性
@@ -56,9 +14,14 @@ Spec-kit是一个Spec-Driven Development开发思想的实践工具，通过安�
 spec其实就是specify的缩写, 翻译过来就是说详细点,Spec-Driven Development的核心在于将以往**代码优先于说明**的优先级反过来，在添加特性时，尽可能细化需求描述，从而使得代码更加贴合预期的需求实现
 
 
+
 ## 为什么要写spec-kit
 
-借着搭博客网站的机会，了解下最近很火的spec-kit开发全流程，评估这个流程是否适合个人项目的长期使用，并总结下自己在使用过程中的体会与经验
+开发我的博客网站的时候我是用了当下很火的Spec kit开发流程增加了一些基础特性，顺便在做个人项目-算法游戏网站的时候也用它来进行项目的初始化
+
+我记录了下使用时候的感悟和心得，评估这个流程是否适合个人项目的长期使用，并总结下自己在使用过程中的体会与经验
+
+结论是：对于已有架构的项目，用spec-kit会更好，但是创建新项目时，在自己对技术栈和架构都不确定的情况下，用 spec-kit跟 vibe coding没区别，很快你就控制不了了
 
 ## 参考
 
@@ -68,36 +31,31 @@ spec其实就是specify的缩写, 翻译过来就是说详细点,Spec-Driven Dev
 
 
 
+## 初始化
 
-## 安装
+首先需要全局安装`specify-cli`
 
 ```bash
 uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX.Y.Z
-
 ```
 
-## 实际执行
-
-在实际使用specify之前需要先初始化项目，通常要引入，就运行下面的命令
+在实际使用specify之前通常要引入项目，就运行下面的命令
 ```bash
 specify init --here
 ```
 
 spec-kit分步骤执行，首先要通过constituion初始化项目, 然后用specify命令增加需求，接着再用clarify帮助agent澄清本次新增特性的疑惑点，agent随后用plan命令创建实行计划，接着用tasks列出细致的实现细节，最后运行implement命令按照tasks中的步骤实现功能
-
-比如过我要给我的博客增加一个特性，那在这之前
-- const: 初始化项目
-- /speckit.plan command to provide your tech stack and architecture choices.
+ 
 
 ### spec-kit的文件结构
 
 spec-kit会创建一个`.specify`文件夹，里面包含以下文件
 
 ```bash
-- memory
-- scripts\powershell
+- memory // 你的 constitution 就放在这里
+- scripts\powershell // 工具脚本
 - templates
-- integrations
+- integrations // 跟你使用的 Agent 结合
 - init-options.json
 - integration.json
 ```
@@ -133,7 +91,7 @@ constitution直译为宪章，在初始化的时候运行一次就好
 
 ### 3. clarify
 
-我认为clarify,才是spec-kit的核心功能，让AI继续检查上一步哪些功能不够清晰，这个过程中Agent会逐个列出不清楚的功能，并通过提供选项问你要按照什么方式去实现
+我认为clarify才是spec-kit的核心功能，让AI继续检查上一步哪些功能不够清晰，这个过程中Agent会逐个列出不清楚的功能，并通过提供选项问你要按照什么方式去实现
 
 虽然我们平常开发也可以通过提示词的方式让AI在修改前反问搞清楚变动方向，但远没有这么细致
 
@@ -148,9 +106,9 @@ constitution直译为宪章，在初始化的时候运行一次就好
 
 ### 4. plan
 
-to-do: plan和tasks的区别是什么，这里要填什么，跟前面的specify和clarify有什么区别，
+<!-- to-do: plan和tasks的区别是什么，这里要填什么，跟前面的specify和clarify有什么区别，
 
-- 执行到这里的时候是不是不填也可以？
+- 执行到这里的时候是不是不填也可以？ -->
 
 ```bash
 /speckit.plan
@@ -224,3 +182,36 @@ spec其实就是specify, 翻译过来就是说详细点
 
 还有spec-kit会在实现特性的过程中自动切换分支，这一点很方便
 
+优点
+
+缺点
+
+怎么使用spec-kit， 这其中包含哪些坑点
+- 这里可以增加一个命令行
+- 
+
+如何用最好，什么样的项目适合用spec-kit
+
+
+
+## 0701速记
+
+constitution可以规定项目的整体原则，比如这个项目的目的，代码风格
+`speckit-constitution` 这是一个网页游戏应用，应当保持代码整洁，核心代码要有注释提示
+- 不仅可以通过skill更新，也可以直接让agent去更新这个文件：.specify/memory/constitution.md
+
+Clarify underspecified areas (recommended before /speckit.plan);
+
+specify声明特性，在constitution完成后执行，声明你想增加的特性，
+- `speckit-specify` 创建一个基础的web 小游戏应用平台，主要用途娱乐，教育，儿童友好，方便我在开发过程中熟悉基础算法知识
+生成一个spec.md:其中包含多个用户案例，user story，比如用户可以无需登陆打开游戏试玩
+functional requirements
+- 网站必须提供游戏列表供选择，游戏中必须包含相应的教育性内容
+
+PLAn技术选型
+- 我专门挑了我不太熟悉的html canavs和naive UI,
+- 有research.md对于技术选型做调研，对比其他同类型技术
+- data-model.md，对于选中的游戏的数据模型
+
+taks将任务细化成具体的可实现的操作
+- 这一步就可以切换模型，切换成可以去具体实现
