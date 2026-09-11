@@ -252,10 +252,10 @@ export async function getPostBySlug(slug: string): Promise<Post> {
   const processedContent = await remark()
     .use(normalizeMarkdownCodeLanguages)
     .use(remarkGfm)
-    .use(remarkRehype)
+    .use(remarkRehype, { allowDangerousHtml: true })
     .use(rehypeMermaidBlocks)
     .use(rehypePrettyCode, prettyCodeOptions)
-    .use(rehypeStringify)
+    .use(rehypeStringify, { allowDangerousHtml: true })
     .process(content);
   const contentHtml = processedContent.toString();
 
