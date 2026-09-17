@@ -1,0 +1,9 @@
+# Build outputs
+.next
+out
+
+# Agent outputs
+.specify
+
+# Generated lockfile
+pnpm-lock.yaml

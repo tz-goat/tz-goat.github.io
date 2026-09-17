@@ -1,7 +1,13 @@
 "use client";
 
 import mediumZoom from "medium-zoom";
-import { memo, useCallback, useEffect, useRef, useState } from "react";
+import {
+  memo,
+  useCallback,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { useTheme } from "@/app/theme-provider";
 
 /** Markdown 正文最终产出的 HTML 字符串。 */
@@ -35,7 +41,9 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
   onOpenMermaidPreview,
 }: ArticleHtmlContentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageZoomRef = useRef<ReturnType<typeof mediumZoom> | null>(null);
+  const imageZoomRef = useRef<ReturnType<typeof mediumZoom> | null>(
+    null,
+  );
   const { resolvedTheme } = useTheme();
 
   /**
@@ -52,9 +60,11 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
         return;
       }
 
-        /** 只处理服务端阶段预埋好的 Mermaid 占位节点。 */
+      /** 只处理服务端阶段预埋好的 Mermaid 占位节点。 */
       const mermaidBlocks = Array.from(
-        container.querySelectorAll<HTMLElement>('[data-mermaid="true"]'),
+        container.querySelectorAll<HTMLElement>(
+          '[data-mermaid="true"]',
+        ),
       );
       if (mermaidBlocks.length === 0) {
         return;
@@ -66,33 +76,37 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
         return;
       }
 
-        /** Mermaid 在当前文章容器内只初始化一次，然后复用到每个图表节点。 */
+      /** Mermaid 在当前文章容器内只初始化一次，然后复用到每个图表节点。 */
       mermaid.initialize({
         startOnLoad: false,
         theme: resolvedTheme === "dark" ? "dark" : "default",
       });
 
       for (const [index, block] of mermaidBlocks.entries()) {
-          /** 优先复用缓存过的源码，避免重复渲染后拿不到原始 Mermaid 文本。 */
-        const source = block.dataset.mermaidSource ?? block.textContent ?? "";
+        /** 优先复用缓存过的源码，避免重复渲染后拿不到原始 Mermaid 文本。 */
+        const source =
+          block.dataset.mermaidSource ?? block.textContent ?? "";
         const trimmedSource = source.trim();
 
         if (!trimmedSource) {
           continue;
         }
 
-          /** 首次渲染前把源码存回 dataset，后续打开预览或重渲染还能继续使用。 */
+        /** 首次渲染前把源码存回 dataset，后续打开预览或重渲染还能继续使用。 */
         block.dataset.mermaidSource = source;
 
         try {
           const diagramId = `mermaid-${index}-${Math.random().toString(36).slice(2, 8)}`;
-          const { svg, bindFunctions } = await mermaid.render(diagramId, trimmedSource);
+          const { svg, bindFunctions } = await mermaid.render(
+            diagramId,
+            trimmedSource,
+          );
 
           if (cancelled) {
             return;
           }
 
-            /** 用 Mermaid 生成的 SVG 回填占位节点，并补上可点击预览的可访问性语义。 */
+          /** 用 Mermaid 生成的 SVG 回填占位节点，并补上可点击预览的可访问性语义。 */
           block.innerHTML = svg;
           block.removeAttribute("data-mermaid-error");
           block.setAttribute("role", "button");
@@ -100,7 +114,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
           block.setAttribute("aria-label", "点击放大 Mermaid 图表");
           bindFunctions?.(block);
         } catch (error) {
-            /** 渲染失败时回退为源码文本，至少保证正文内容仍然可读。 */
+          /** 渲染失败时回退为源码文本，至少保证正文内容仍然可读。 */
           console.error("Failed to render mermaid diagram", error);
           block.textContent = source;
           block.dataset.mermaidError = "true";
@@ -128,7 +142,9 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
       return;
     }
 
-    const images = Array.from(container.querySelectorAll<HTMLImageElement>("img"));
+    const images = Array.from(
+      container.querySelectorAll<HTMLImageElement>("img"),
+    );
     imageZoomRef.current?.detach();
     imageZoomRef.current = null;
 
@@ -139,7 +155,9 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
     const zoom = mediumZoom(images, {
       margin: 32,
       background:
-        resolvedTheme === "dark" ? "rgba(9, 9, 11, 0.88)" : "rgba(255, 255, 255, 0.88)",
+        resolvedTheme === "dark"
+          ? "rgba(9, 9, 11, 0.88)"
+          : "rgba(255, 255, 255, 0.88)",
     });
     imageZoomRef.current = zoom;
 
@@ -236,12 +254,16 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
  * - 渲染 Lightbox
  */
 export default function PostContent({ html }: PostContentProps) {
-  const [mermaidPreview, setMermaidPreview] = useState<MermaidPreview | null>(null);
+  const [mermaidPreview, setMermaidPreview] =
+    useState<MermaidPreview | null>(null);
 
   /** 稳定传给子组件的回调，避免 memo 因函数引用变化失效。 */
-  const handleOpenMermaidPreview = useCallback((preview: MermaidPreview) => {
-    setMermaidPreview(preview);
-  }, []);
+  const handleOpenMermaidPreview = useCallback(
+    (preview: MermaidPreview) => {
+      setMermaidPreview(preview);
+    },
+    [],
+  );
 
   /** 只有弹层打开时才注册 Esc 监听，并顺手锁住页面滚动。 */
   useEffect(() => {
@@ -267,7 +289,10 @@ export default function PostContent({ html }: PostContentProps) {
 
   return (
     <>
-      <ArticleHtmlContent html={html} onOpenMermaidPreview={handleOpenMermaidPreview} />
+      <ArticleHtmlContent
+        html={html}
+        onOpenMermaidPreview={handleOpenMermaidPreview}
+      />
 
       {mermaidPreview ? (
         <div
@@ -277,7 +302,10 @@ export default function PostContent({ html }: PostContentProps) {
           aria-label={mermaidPreview.title}
           onClick={() => setMermaidPreview(null)}
         >
-          <div className="diagram-lightbox__panel" onClick={(event) => event.stopPropagation()}>
+          <div
+            className="diagram-lightbox__panel"
+            onClick={(event) => event.stopPropagation()}
+          >
             <button
               type="button"
               className="diagram-lightbox__close"

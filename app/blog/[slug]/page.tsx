@@ -65,7 +65,7 @@ export default async function PostPage({ params }: Props) {
             </ul>
           </header>
 
-            <PostContent html={post.contentHtml} />
+          <PostContent html={post.contentHtml} />
         </article>
       </main>
     </div>

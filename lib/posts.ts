@@ -160,7 +160,9 @@ export function normalizeTagSlug(raw: string): string {
 
 function parseTagsField(raw: unknown, fileLabel: string): string[] {
   if (raw == null) {
-    throw new Error(`${fileLabel}: frontmatter "tags" is required (non-empty array).`);
+    throw new Error(
+      `${fileLabel}: frontmatter "tags" is required (non-empty array).`,
+    );
   }
   const strings: string[] = Array.isArray(raw)
     ? raw.map((x) => String(x))
@@ -168,16 +170,24 @@ function parseTagsField(raw: unknown, fileLabel: string): string[] {
       ? [raw]
       : [];
   if (strings.length === 0) {
-    throw new Error(`${fileLabel}: "tags" must be a non-empty array or non-empty string.`);
+    throw new Error(
+      `${fileLabel}: "tags" must be a non-empty array or non-empty string.`,
+    );
   }
   const normalized = strings.map((s) => normalizeTagSlug(s));
   return [...new Set(normalized)];
 }
 
 function parseHiddenField(raw: unknown): boolean {
-  if (raw == null) return false;
-  if (typeof raw === "boolean") return raw;
-  if (typeof raw === "number") return raw !== 0;
+  if (raw == null) {
+    return false;
+  }
+  if (typeof raw === "boolean") {
+    return raw;
+  }
+  if (typeof raw === "number") {
+    return raw !== 0;
+  }
   if (typeof raw === "string") {
     const v = raw.trim().toLowerCase();
     return v === "true" || v === "1" || v === "yes";
@@ -215,7 +225,11 @@ export function getAllPosts(): PostMeta[] {
       const fullPath = path.join(postsDirectory, fileName);
       const fileContents = fs.readFileSync(fullPath, "utf8");
       const { data } = matter(fileContents);
-      return metaFromMatter(data as Record<string, unknown>, slug, fileName);
+      return metaFromMatter(
+        data as Record<string, unknown>,
+        slug,
+        fileName,
+      );
     })
     .filter((p) => !p.hidden);
 
@@ -244,7 +258,11 @@ export async function getPostBySlug(slug: string): Promise<Post> {
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const { data, content } = matter(fileContents);
   const fileName = `${slug}.md`;
-  const meta = metaFromMatter(data as Record<string, unknown>, slug, fileName);
+  const meta = metaFromMatter(
+    data as Record<string, unknown>,
+    slug,
+    fileName,
+  );
   if (meta.hidden) {
     throw new Error("Post is hidden");
   }
