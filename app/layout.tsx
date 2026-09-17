@@ -21,7 +21,8 @@ export const metadata: Metadata = {
     template: "%s | 二魔的技术博客", // 子页面自动套用模板，比如文章页：文章标题 | 二魔的技术博客
   },
   // meta‑description：搜索引擎摘要、AI AEO非常依赖，120‑160字符，写清楚你是谁、博客内容、价值，不要空话
-  description: "前端全栈开发个人博客，分享Vue、React、TypeScript、Node工程化实战笔记，记录学习复盘、项目实践，技术总结与思考。",
+  description:
+    "前端全栈开发个人博客，分享Vue、React、TypeScript、Node工程化实战笔记，记录学习复盘、项目实践，技术总结与思考。",
   // 🔗 核心SEO/AEO 扩展（简历博客强烈建议补齐）
   authors: [{ name: "二魔", url: "https://tz-goat.github.io" }],
   creator: "二魔",
@@ -64,8 +65,8 @@ export const metadata: Metadata = {
     googleBot: {
       index: true,
       follow: true,
-      'max-video-preview': "large", // 允许 Google 搜索结果显示大尺寸视频预览；none/small/large
-      'max-image-preview': "large", // 允许 Google 搜索结果显示大尺寸图片预览；none/small/large
+      "max-video-preview": "large", // 允许 Google 搜索结果显示大尺寸视频预览；none/small/large
+      "max-image-preview": "large", // 允许 Google 搜索结果显示大尺寸图片预览；none/small/large
     },
   },
 
@@ -121,7 +122,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
         <ThemeProvider>
-          <div className="fixed right-4 top-4 z-50 sm:right-6 sm:top-6">
+          <div className="fixed top-4 right-4 z-50 sm:top-6 sm:right-6">
             <ThemeToggle />
           </div>
           {children}

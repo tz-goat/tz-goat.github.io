@@ -1,13 +1,7 @@
 "use client";
 
 import mediumZoom from "medium-zoom";
-import {
-  memo,
-  useCallback,
-  useEffect,
-  useRef,
-  useState,
-} from "react";
+import { memo, useCallback, useEffect, useRef, useState } from "react";
 import { useTheme } from "@/app/theme-provider";
 
 /** Markdown 正文最终产出的 HTML 字符串。 */
@@ -41,9 +35,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
   onOpenMermaidPreview,
 }: ArticleHtmlContentProps) {
   const containerRef = useRef<HTMLDivElement>(null);
-  const imageZoomRef = useRef<ReturnType<typeof mediumZoom> | null>(
-    null,
-  );
+  const imageZoomRef = useRef<ReturnType<typeof mediumZoom> | null>(null);
   const { resolvedTheme } = useTheme();
 
   /**
@@ -62,9 +54,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
 
       /** 只处理服务端阶段预埋好的 Mermaid 占位节点。 */
       const mermaidBlocks = Array.from(
-        container.querySelectorAll<HTMLElement>(
-          '[data-mermaid="true"]',
-        ),
+        container.querySelectorAll<HTMLElement>('[data-mermaid="true"]'),
       );
       if (mermaidBlocks.length === 0) {
         return;
@@ -84,8 +74,7 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
 
       for (const [index, block] of mermaidBlocks.entries()) {
         /** 优先复用缓存过的源码，避免重复渲染后拿不到原始 Mermaid 文本。 */
-        const source =
-          block.dataset.mermaidSource ?? block.textContent ?? "";
+        const source = block.dataset.mermaidSource ?? block.textContent ?? "";
         const trimmedSource = source.trim();
 
         if (!trimmedSource) {
@@ -254,16 +243,14 @@ const ArticleHtmlContent = memo(function ArticleHtmlContent({
  * - 渲染 Lightbox
  */
 export default function PostContent({ html }: PostContentProps) {
-  const [mermaidPreview, setMermaidPreview] =
-    useState<MermaidPreview | null>(null);
+  const [mermaidPreview, setMermaidPreview] = useState<MermaidPreview | null>(
+    null,
+  );
 
   /** 稳定传给子组件的回调，避免 memo 因函数引用变化失效。 */
-  const handleOpenMermaidPreview = useCallback(
-    (preview: MermaidPreview) => {
-      setMermaidPreview(preview);
-    },
-    [],
-  );
+  const handleOpenMermaidPreview = useCallback((preview: MermaidPreview) => {
+    setMermaidPreview(preview);
+  }, []);
 
   /** 只有弹层打开时才注册 Esc 监听，并顺手锁住页面滚动。 */
   useEffect(() => {

@@ -225,11 +225,7 @@ export function getAllPosts(): PostMeta[] {
       const fullPath = path.join(postsDirectory, fileName);
       const fileContents = fs.readFileSync(fullPath, "utf8");
       const { data } = matter(fileContents);
-      return metaFromMatter(
-        data as Record<string, unknown>,
-        slug,
-        fileName,
-      );
+      return metaFromMatter(data as Record<string, unknown>, slug, fileName);
     })
     .filter((p) => !p.hidden);
 
@@ -258,11 +254,7 @@ export async function getPostBySlug(slug: string): Promise<Post> {
   const fileContents = fs.readFileSync(fullPath, "utf8");
   const { data, content } = matter(fileContents);
   const fileName = `${slug}.md`;
-  const meta = metaFromMatter(
-    data as Record<string, unknown>,
-    slug,
-    fileName,
-  );
+  const meta = metaFromMatter(data as Record<string, unknown>, slug, fileName);
   if (meta.hidden) {
     throw new Error("Post is hidden");
   }

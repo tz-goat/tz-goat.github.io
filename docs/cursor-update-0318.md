@@ -24,6 +24,7 @@ posts/
 **3. 创建了 `lib/posts.ts`**
 
 两个工具函数：
+
 - `getAllPosts()` —— 读取 `posts/` 目录下所有 `.md` 文件，解析 frontmatter，按日期倒序排列，用于列表页
 - `getPostBySlug(slug)` —— 根据文件名读取单篇文章，把 Markdown 转成 HTML，用于详情页
 
@@ -31,10 +32,10 @@ posts/
 
 **4. 新增了两个页面**
 
-| 路由 | 文件 | 作用 |
-|------|------|------|
-| `/blog` | `app/blog/page.tsx` | 文章列表，展示所有文章 |
-| `/blog/hello-world` | `app/blog/[slug]/page.tsx` | 文章详情，动态路由 |
+| 路由                | 文件                       | 作用                   |
+| ------------------- | -------------------------- | ---------------------- |
+| `/blog`             | `app/blog/page.tsx`        | 文章列表，展示所有文章 |
+| `/blog/hello-world` | `app/blog/[slug]/page.tsx` | 文章详情，动态路由     |
 
 ---
 

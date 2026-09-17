@@ -15,11 +15,9 @@ tags:
 
 此外，工作中一定会产生很多自己的思考和沉淀。我自己平常又会写很多笔记，博客就是自己笔记的汇总和提总。
 
-
 ## 技术栈选型
 
 之前在data.ai(已被Sensor Tower收购)上班时，公司用的前端框架就是Next.js, 而在富途和店小秘的业务组都是主要用Vue。对React的理解使用在回国之后慢慢弱了一些，但是后来在进行面试准备的时候发现一线大厂更偏向React。所以为了保持对技术栈的熟悉，我决定自己的博客还是要用Next.js来写。
-
 
 ## 初始化-搭建过程
 
@@ -33,16 +31,11 @@ Cursor是我平常使用最多的工具，所以我的这个博客当然是通�
 
 在我输入上述命令后，Cursor直接搭出来一套完整的博客系统，共做了以下几件事：
 
-
-
 **1. 安装了 3 个依赖**
 
 - `gray-matter` —— 解析 Markdown 文件顶部的 frontmatter（`title`、`date` 这些元数据）
 - `remark` + `remark-html` —— 把 Markdown 正文转成 HTML
 - `@tailwindcss/typography` —— 让 Markdown 渲染出来的 HTML 有好看的排版样式
-
-
- 
 
 **2. 创建了第一篇文章 `posts/hello-world.md`**
 
@@ -53,30 +46,26 @@ posts/
 
 文件顶部是 frontmatter（`---` 包裹的部分），定义标题、日期、描述；下面是正文 Markdown 内容。
 
-
 **3. 创建了 `lib/posts.ts`**
 
 两个工具函数：
+
 - `getAllPosts()` —— 读取 `posts/` 目录下所有 `.md` 文件，解析 frontmatter，按日期倒序排列，用于列表页
 - `getPostBySlug(slug)` —— 根据文件名读取单篇文章，把 Markdown 转成 HTML，用于详情页
-
-
 
 **4. 新增了示列页面并改造首页**
 
 从原来的 Next.js 默认欢迎页，换成了展示最近 3 篇文章 + "全部文章 →" 链接的博客首页。
 
 ```markdown
-| 路由 | 文件 | 作用 |
-|------|------|------|
-| `/blog` | `app/blog/page.tsx` | 文章列表，展示所有文章 |
-| `/blog/hello-world` | `app/blog/[slug]/page.tsx` | 文章详情，动态路由 |
-|------|------|------|
+| 路由                | 文件                       | 作用                   |
+| ------------------- | -------------------------- | ---------------------- |
+| `/blog`             | `app/blog/page.tsx`        | 文章列表，展示所有文章 |
+| `/blog/hello-world` | `app/blog/[slug]/page.tsx` | 文章详情，动态路由     |
+| ------              | ------                     | ------                 |
 ```
 
 **5. 改造了首页 `app/page.tsx`**
-
-
 
 ---
 
@@ -123,14 +112,14 @@ remark()
   .use(remarkGfm)
   .use(remarkRehype)
   .use(rehypePrettyCode, prettyCodeOptions)
-  .use(rehypeStringify)
+  .use(rehypeStringify);
 ```
 
 这里有两个比较关键的技术点。
 
 **1. 在高亮前先规范代码块语言名**
 
-我后来排查时发现，新文章里有些代码块写的是 ```` ```JavaScript ````，而不是更常见的 `javascript` / `js`。  
+我后来排查时发现，新文章里有些代码块写的是 ` ```JavaScript `，而不是更常见的 `javascript` / `js`。  
 如果语言名没有被高亮器识别，代码块虽然还是 `<pre><code>`，但里面只会是普通文本，不会生成真正的彩色 token。
 
 所以我在渲染链路里先加了一步 `normalizeMarkdownCodeLanguages`，把 fenced code block 的语言名统一转成小写。这样旧文章和新文章都能兼容，不需要回头手动逐篇修改。

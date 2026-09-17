@@ -7,7 +7,6 @@ tags:
   - "file-download"
 ---
 
-
 ## 业务背景
 
 富途的业务同事需要从多个上游券商获取文件，但是不同上游各自有各自的中台系统，比较分散，缺少一个统一的文件管理中台
@@ -177,7 +176,6 @@ sequenceDiagram
     Browser-->>User: 浏览器下载文件
 ```
 
-
 ```JavaScript
 const stream = await ctx.service.foss.streamDownload(
   { spaceId: fossSpaceId, filename: fossKey },
@@ -329,8 +327,7 @@ sequenceDiagram
         Task-->>API: 返回 taskId
         API-->>FE: 返回 taskId
     end
-````
-
+```
 
 后台 Worker 接手：
 
@@ -371,7 +368,6 @@ sequenceDiagram
     Browser->>FOSS: 请求最终 zip
     FOSS-->>Browser: 返回 zip 文件流
 ```
-
 
 Worker 执行的 demo 代码如下：
 
@@ -447,8 +443,6 @@ async function runWorker(app) {
 2. 将批量下载正式纳入任务体系后，任务状态可追踪、失败可重试，用户不需要因为一次打包失败就重新跑完整链路。
 3. ZIP 产物写入临时对象存储后，下载结果可以被重复获取，用户不必长时间停留在当前页面等待打包完成，整体体验更稳定。
 4. 对服务端来说，原来集中在同步请求里的超时压力、内存峰值和失败恢复问题被拆散到异步 Worker 和对象存储链路中，系统更容易治理和扩展。
-
-
 
 #### **更理想的演进方向**
 
@@ -530,8 +524,6 @@ sequenceDiagram
     API-->>Upload: 返回 taskIdList
     Upload-->>User: 提示上传任务创建成功
 ```
-
-
 
 #### **痛点：请求链路过长，内存容易占用过高**
 
@@ -626,7 +618,6 @@ sequenceDiagram
         API-->>FE: 返回状态与错误信息
     end
 ```
-
 
 #### **收益**
 
@@ -730,7 +721,7 @@ sequenceDiagram
    - 平均耗时 / P95 下降
    - 服务端内存峰值下降
    - 超时 / 重试次数减少
-   那就可以肯定本次调整有效。
+     那就可以肯定本次调整有效。
 
 ### 从同步请求到异步任务
 

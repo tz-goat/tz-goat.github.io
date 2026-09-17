@@ -6,7 +6,7 @@ export default function Home() {
   const recentPosts = posts.slice(0, 3);
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-zinc-50 dark:bg-black">
+    <div className="flex min-h-screen items-center justify-center bg-zinc-50 dark:bg-black">
       <main className="w-full max-w-2xl px-6 py-20">
         <h1 className="text-3xl font-bold tracking-tight text-zinc-900 dark:text-zinc-50">
           二魔的博客
@@ -17,7 +17,7 @@ export default function Home() {
 
         <div className="mt-12">
           <div className="flex items-center justify-between">
-            <h2 className="text-sm font-semibold uppercase tracking-widest text-zinc-400">
+            <h2 className="text-sm font-semibold tracking-widest text-zinc-400 uppercase">
               最新文章
             </h2>
             <Link
@@ -36,7 +36,9 @@ export default function Home() {
                   <h3 className="mt-1 font-semibold text-zinc-900 group-hover:text-zinc-600 dark:text-zinc-50 dark:group-hover:text-zinc-300">
                     {post.title}
                   </h3>
-                  <p className="mt-1 text-sm text-zinc-500">{post.description}</p>
+                  <p className="mt-1 text-sm text-zinc-500">
+                    {post.description}
+                  </p>
                 </Link>
               </li>
             ))}

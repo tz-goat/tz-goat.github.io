@@ -40,7 +40,8 @@ export default function ThemeToggle() {
   const { theme, setTheme } = useTheme();
   const [isOpen, setIsOpen] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
-  const currentOption = THEME_OPTIONS.find((option) => option.value === theme) ?? THEME_OPTIONS[2];
+  const currentOption =
+    THEME_OPTIONS.find((option) => option.value === theme) ?? THEME_OPTIONS[2];
   const CurrentIcon = currentOption.icon;
 
   /**
@@ -109,7 +110,9 @@ export default function ThemeToggle() {
               onClick={() => handleThemeSelect(option.value)}
               className={[
                 THEME_OPTION_BASE_CLASS_NAME,
-                isActive ? THEME_OPTION_ACTIVE_CLASS_NAME : THEME_OPTION_INACTIVE_CLASS_NAME,
+                isActive
+                  ? THEME_OPTION_ACTIVE_CLASS_NAME
+                  : THEME_OPTION_INACTIVE_CLASS_NAME,
               ].join(" ")}
               aria-label={option.label}
               aria-pressed={isActive}

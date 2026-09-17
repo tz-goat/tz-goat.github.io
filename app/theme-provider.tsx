@@ -96,7 +96,9 @@ function applyResolvedTheme(theme: ResolvedTheme) {
  */
 export function ThemeProvider({ children }: ThemeProviderProps) {
   const [theme, setTheme] = useState<ThemeMode>(() => readStoredTheme());
-  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() => getSystemTheme());
+  const [systemTheme, setSystemTheme] = useState<ResolvedTheme>(() =>
+    getSystemTheme(),
+  );
 
   /**
    * 只有在用户选择 `system` 时，系统主题变化才应该影响页面。
@@ -159,9 +161,10 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
    */
   const toggleTheme = useCallback(() => {
     setTheme((currentTheme) => {
-      const nextResolvedTheme = (currentTheme === "system" ? systemTheme : currentTheme) === "dark"
-        ? "light"
-        : "dark";
+      const nextResolvedTheme =
+        (currentTheme === "system" ? systemTheme : currentTheme) === "dark"
+          ? "light"
+          : "dark";
       return nextResolvedTheme;
     });
   }, [systemTheme]);
@@ -175,7 +178,9 @@ export function ThemeProvider({ children }: ThemeProviderProps) {
     };
   }, [resolvedTheme, theme, toggleTheme]);
 
-  return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
+  return (
+    <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>
+  );
 }
 
 /**
