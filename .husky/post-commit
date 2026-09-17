@@ -1,1 +1,11 @@
-raycast://extensions/raycast/raycast/confetti
+#!/bin/sh
+
+# Raycast 没安装时直接跳过，避免 post-commit 因本地环境差异报错。
+RAYCAST_APP="$(mdfind 'kMDItemCFBundleIdentifier == "com.raycast.macos"' | head -n 1)"
+
+if [ -z "$RAYCAST_APP" ]; then
+  exit 0
+fi
+
+# 用 open 调起 Raycast URL Scheme；失败也不阻塞提交流程。
+open "raycast://extensions/raycast/raycast/confetti" >/dev/null 2>&1 || true
