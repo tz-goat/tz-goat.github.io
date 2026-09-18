@@ -196,6 +196,88 @@ CI 中：
 
 这样能把低成本问题收敛在提交前，而不是等到 CI 再失败。
 
+### 7.1 `post-commit` 里触发 Raycast Confetti，为什么最后选最小写法
+
+#### 场景
+
+希望在本地提交成功后触发 Raycast 的 Confetti，但又不想因为个人环境差异影响 `git commit`。
+
+#### 一开始为什么会失败
+
+如果在 `.husky/post-commit` 里直接写：
+
+```sh
+raycast://extensions/raycast/raycast/confetti
+```
+
+shell 会把它当成“要执行的命令路径”，而不是 URL Scheme，所以会报：
+
+- `No such file or directory`
+
+#### 为什么改成 `open`
+
+在 macOS 里，正确做法是让系统去打开这个 URL Scheme：
+
+```sh
+open "raycast://extensions/raycast/raycast/confetti"
+```
+
+这里的 `open` 才是 shell 里真正能执行的命令，`raycast://...` 只是它要打开的目标。
+
+#### 为什么不继续做更重的 Raycast 安装检测
+
+一种思路是先检查 Raycast 是否安装，比如用 `mdfind` 搜索 bundle id。
+
+但这个场景里，我们真正关心的不是“事前精确判断 Raycast 是否存在”，而是：
+
+- 能放彩带就放；
+- 放不了就安静跳过；
+- 不要阻塞提交流程。
+
+所以更合适的策略是采用最小可用解：
+
+```sh
+#!/bin/sh
+
+command -v open >/dev/null 2>&1 || exit 0
+open "raycast://extensions/raycast/raycast/confetti" >/dev/null 2>&1 || true
+```
+
+#### 这段脚本分别在做什么
+
+- `command -v open >/dev/null 2>&1 || exit 0`
+  - 先检查当前环境是否存在 `open`
+  - 没有就直接退出，不报错
+- `open "raycast://..." >/dev/null 2>&1 || true`
+  - 尝试打开 Raycast Confetti
+  - 即使 Raycast 没装、scheme 没注册、打开失败，也不让 hook 失败
+
+#### 为什么这版更适合个人项目
+
+它的优点是：
+
+- 足够短，维护成本低；
+- 不依赖 `mdfind` 这类额外检查；
+- 失败路径统一被兜底，不影响提交；
+- 对“提交成功后顺手放个彩带”这种辅助能力来说已经够用。
+
+#### 它的边界
+
+这段脚本本质上是 **macOS 优先** 的：
+
+- `open` 是 macOS 的常用打开方式；
+- Raycast 本身也是 macOS 应用。
+
+因此这不是一个面向跨平台协作的功能，而是一个“本地增强、不影响主流程”的附加体验。
+
+#### 最后结论
+
+对这类“锦上添花”的 hook，优先遵守这条原则：
+
+- 主流程必须稳定；
+- 辅助能力能成功就成功；
+- 失败时必须静默退出，不要干扰提交。
+
 ### 8. 怎么把 lint 检查接进 GitHub Actions
 
 #### 推荐方式
