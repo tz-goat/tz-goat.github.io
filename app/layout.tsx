@@ -110,11 +110,8 @@ const themeInitScript = `
  * 这样首屏期间如果已经有自定义事件触发，也不会因为 CDN 还没到而直接丢失。
  */
 const plausibleQueueInitScript = `
-window.plausible =
-  window.plausible ||
-  function () {
-    (window.plausible.q = window.plausible.q || []).push(arguments);
-  };
+window.plausible=window.plausible||function(){(plausible.q=plausible.q||[]).push(arguments)},plausible.init=plausible.init||function(i){plausible.o=i||{}};
+  plausible.init()
 `;
 
 /**
