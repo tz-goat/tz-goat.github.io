@@ -1,0 +1,34 @@
+#!/usr/bin/env bash
+set -e
+
+function dev {
+  # print usage information
+  pnpm run dev
+}
+
+function install {
+  # install dependencies
+  pnpm install
+}
+
+function build {
+  # trigger build process
+  pnpm run build
+}
+
+function test {
+  # run test suite
+
+  # you can even run multiple steps in one command, cool huh?
+  pnpm run test:unit
+  npx run playwright
+}
+
+function format {
+  # it works well for hiding args we need to pass to underlying commands
+  pnpm run prettier --write
+}
+
+# call the function with the name that was passed to this script - or show
+# usage information if nothing was passed
+${@:-usage}

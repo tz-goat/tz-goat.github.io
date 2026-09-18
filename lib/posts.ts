@@ -160,7 +160,9 @@ export function normalizeTagSlug(raw: string): string {
 
 function parseTagsField(raw: unknown, fileLabel: string): string[] {
   if (raw == null) {
-    throw new Error(`${fileLabel}: frontmatter "tags" is required (non-empty array).`);
+    throw new Error(
+      `${fileLabel}: frontmatter "tags" is required (non-empty array).`,
+    );
   }
   const strings: string[] = Array.isArray(raw)
     ? raw.map((x) => String(x))
@@ -168,16 +170,24 @@ function parseTagsField(raw: unknown, fileLabel: string): string[] {
       ? [raw]
       : [];
   if (strings.length === 0) {
-    throw new Error(`${fileLabel}: "tags" must be a non-empty array or non-empty string.`);
+    throw new Error(
+      `${fileLabel}: "tags" must be a non-empty array or non-empty string.`,
+    );
   }
   const normalized = strings.map((s) => normalizeTagSlug(s));
   return [...new Set(normalized)];
 }
 
 function parseHiddenField(raw: unknown): boolean {
-  if (raw == null) return false;
-  if (typeof raw === "boolean") return raw;
-  if (typeof raw === "number") return raw !== 0;
+  if (raw == null) {
+    return false;
+  }
+  if (typeof raw === "boolean") {
+    return raw;
+  }
+  if (typeof raw === "number") {
+    return raw !== 0;
+  }
   if (typeof raw === "string") {
     const v = raw.trim().toLowerCase();
     return v === "true" || v === "1" || v === "yes";

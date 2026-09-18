@@ -1,0 +1,4 @@
+#!/bin/sh
+
+command -v open >/dev/null 2>&1 || exit 0
+open "raycast://extensions/raycast/raycast/confetti" >/dev/null 2>&1 || true

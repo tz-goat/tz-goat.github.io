@@ -32,10 +32,10 @@ uv tool install specify-cli --from git+https://github.com/github/spec-kit.git@vX
 ```
 
 在实际使用 specify 之前，通常要先引入项目，运行下面的命令
+
 ```bash
 specify init --here
 ```
- 
 
 ### Spec Kit 的文件结构
 
@@ -55,6 +55,7 @@ Spec Kit 会创建一个 `.specify` 文件夹，里面包含以下文件
 <img src="/img/speckit-0911/speckit-workflow.png" alt="spec-kit 流程图" style="margin: 0 auto; width: 60%;" />
 
 Spec Kit 一般按以下步骤执行：
+
 1. 首先要通过 constitution 初始化项目
 2. 然后用 specify 命令增加需求
 3. 接着用 clarify 帮助 Agent 澄清本次新增特性的疑惑点；
@@ -63,7 +64,6 @@ Spec Kit 一般按以下步骤执行：
 6. 最后运行 implement 命令按照 tasks 中的步骤实现功能
 
 ### 1. constitution
-
 
 `constitution` 直译为宪章，将 spec 引入项目的时候运行一次即可，它会描述这个项目的用途和开发规则，方便后续开发时进行参考
 
@@ -122,6 +122,7 @@ Spec Kit 一般按以下步骤执行：
 ```
 
 开发网页游戏项目的时候，Agent 只问了一个问题，并更新了上一轮中的 `spec.md` 文件，写入 `## Clarifications` 中。
+
 ```markdown
 Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫寻路
 ```
@@ -158,7 +159,6 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 - 运行验证，最小验证工作流： quickstart.md
 - 合同（内部模块契约）： contracts/game-module.md， contracts/maze-pathfinding.md
 
-
 ### 5. tasks
 
 前面的步骤都有些抽象，而 `tasks` 这一步会根据之前的产物生成一份非常详细、可直接执行的任务拆解清单。
@@ -168,6 +168,7 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 这一步生成的任务拆解清单 `tasks.md` 内容如下：
 
 1. **前置检查**：是否**已切换了分支**，并盘点影响的文件。
+
 ```markdown
 **Prerequisites**: plan.md (required), spec.md (required), research.md, data-model.md, contracts/, quickstart.md
 ```
@@ -183,12 +184,13 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 
 **Purpose**: Align dependencies and scaffold the planned structure.
 
-- [X] T001 Add Naive UI dependency to package.json and install via lockfile update (package.json, package-lock.json)
-- [X] T002 Update src/main.ts to register app-level providers needed for Naive UI usage (src/main.ts)
-- [X] T003 Create source directories per plan structure (src/algorithms/, src/engine/, src/games/, src/platform/, src/__tests__/)
+- [x] T001 Add Naive UI dependency to package.json and install via lockfile update (package.json, package-lock.json)
+- [x] T002 Update src/main.ts to register app-level providers needed for Naive UI usage (src/main.ts)
+- [x] T003 Create source directories per plan structure (src/algorithms/, src/engine/, src/games/, src/platform/, src/**tests**/)
 ```
 
 3. 还有 user story 描述具体使用案例，比如用户只能看到公开文章。每个 story 下都有 test，方便 Agent 检查 story 是否符合预期。
+
 ```markdown
 ## Phase 3: User Story 1 - Choose & Play a Game (Priority: P1) 🎯 MVP
 
@@ -198,9 +200,8 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 
 ### Tests for User Story 1
 
-- [ ] T014 [P] [US1] Unit test game registry lists the featured maze game (src/__tests__/games/registry.spec.ts, src/games/registry.ts)
+- [ ] T014 [P] [US1] Unit test game registry lists the featured maze game (src/**tests**/games/registry.spec.ts, src/games/registry.ts)
 ```
-
 
 ```markdown
 **Purpose**: 在内容解析层引入“可见性”能力，供所有页面复用
@@ -226,16 +227,16 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 **Checkpoint**: 仅完成 US1 仍可独立演示：隐藏文章不会出现在主要列表入口
 ```
 
-
 ### 6. implement
+
 这一步就是根据 `tasks.md` 中的具体实现步骤来进行实际更改，在实现过程中还会对照 checklist，把已经完成的部分打勾记录。
 
 因为具体步骤都已经写好了，所以也不是非得通过 Spec Kit 内置命令来实现，自己让 Agent 对着 `tasks.md` 去改也完全可行。
 
-  
 ## 总结
 
 开头的时候我也说过，我认为 Spec Kit 对已有项目，也就是项目架构和技术栈都已经确定的项目，贴合度会更高；对于从 0 到 1 的新项目，用起来则更容易失去掌控。
+
 - 初始化阶段的**技术栈选型、状态管理**往往都还没有稳定下来，这时候一下子生成大量文件和代码，理解成本与维护成本都会迅速上升。
 - 如果习惯了 Vibe coding的节奏, 本来就接受较高的不确定性，这套流程的约束价值可能没那么明显；但对专业开发来说，能否**持续掌控 Agent 的产出**依然是很重要的前提。
 
@@ -244,14 +245,14 @@ Q: 首个内置小游戏（MVP）希望主打哪个算法主题？ → A: 迷宫
 1. 在实现特性的步骤中**自动切换分支**，这一点确实很方便。
 2. `/clarify` 这个命令非常加分。开发时如果 Agent 在特性边界不清楚的情况下就直接动手改，很容易产出后续维护成本较高的代码，最后还得开发者自己收尾。
 3. 每个步骤都会**产出一大堆文件**，这是它的优点也是缺点
-  - 这些文件确实能帮助梳理需求，特别是对于复杂特性，checklist 能保证没有遗漏关键的 edge case。
-  - 比如我增加 tag 功能时，Agent 会帮我梳理出哪些路由需要增加、哪些文件需要修改、哪些测试用例需要补、哪些文档需要同步，而且这些文件都是模板化的，可以复用，所以不会平白增加太多工作量。
-  - 但它的代价也很明确。现在的主流思路通常是尽量**压缩上下文**，而 Spec Kit 反过来要求你保留更多过程文档，这意味着更高的 token 开销，也意味着更多阅读和维护成本。
-  - 所以我的判断是：对于复杂特性，这种约束和文档化是值得的；但对于很小的特性，它就会显得偏重。
+
+- 这些文件确实能帮助梳理需求，特别是对于复杂特性，checklist 能保证没有遗漏关键的 edge case。
+- 比如我增加 tag 功能时，Agent 会帮我梳理出哪些路由需要增加、哪些文件需要修改、哪些测试用例需要补、哪些文档需要同步，而且这些文件都是模板化的，可以复用，所以不会平白增加太多工作量。
+- 但它的代价也很明确。现在的主流思路通常是尽量**压缩上下文**，而 Spec Kit 反过来要求你保留更多过程文档，这意味着更高的 token 开销，也意味着更多阅读和维护成本。
+- 所以我的判断是：对于复杂特性，这种约束和文档化是值得的；但对于很小的特性，它就会显得偏重。
 
 ## 参考
 
 参考原作者 Den Delimarsky 的教程，视频里 Den 演示了如何通过 Spec Kit 在自己**已有的博客项目**里增加一个待阅读清单功能：
 
 - [Using GitHub Spec Kit with your EXISTING PROJECTS](https://www.youtube.com/watch?v=SGHIQTsPzuY&t)
-
