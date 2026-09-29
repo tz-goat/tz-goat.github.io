@@ -1,4 +1,6 @@
 import customNoRawColor from "./plugins/no-raw-color.mjs";
+import customNoPrefersColorSchemeDark from "./plugins/no-prefers-color-scheme-dark.mjs";
+import customNoDirectDarkSelector from "./plugins/no-direct-dark-selector.mjs";
 /**
  * Stylelint 基础配置。
  * 职责：守住 globals.css 的主题入口与书写边界，并对 Tailwind v4 语法放行。
@@ -11,7 +13,7 @@ import customNoRawColor from "./plugins/no-raw-color.mjs";
 const stylelintConfig = {
   extends: ["stylelint-config-standard"],
   ignoreFiles: [".next/**", "out/**", "build/**", "dist/**", "node_modules/**"],
-  plugins: [customNoRawColor],
+  plugins: [customNoRawColor, customNoPrefersColorSchemeDark, customNoDirectDarkSelector],
   rules: {
     // 放行 Tailwind v4 扩展 at-rule；保留规则本身，避免出现未知 at-rule 静默通过。
     "at-rule-no-unknown": [
@@ -41,6 +43,8 @@ const stylelintConfig = {
       },
     ],
     "custom/no-raw-color-outside-theme": true,
+    "custom/no-prefers-color-scheme-dark": true,
+    "custom/no-direct-dark-selector": true,
   },
 };
 export default stylelintConfig;

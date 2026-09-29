@@ -33,8 +33,8 @@ const hasRawColorLiteral = (value) => {
   });
   return hasHardColor;
 };
-/** @type {import('stylelint').Rule} */
-const ruleFunction = (primary, secondaryOptions, context) => {
+
+const ruleFunction = (primary) => {
   return (root, result) => {
     const validOptions = validateOptions(result, ruleName, {
       actual: primary,
